@@ -599,7 +599,7 @@
     fetch(CONFIG.webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: text }),
+      body: JSON.stringify({ chatInput: text }),
       signal: controller.signal
     }).then(function (res) {
       clearTimeout(timeout);
