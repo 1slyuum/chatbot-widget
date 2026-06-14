@@ -39,17 +39,18 @@
   // ───────────────────────────────────────────────
   // SESSION ID — unique per visitor, persisted in localStorage
   // ───────────────────────────────────────────────
-  var SESSION_ID;
+  var SESSION_ID = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
   try {
-    SESSION_ID = localStorage.getItem('cw_session_id');
-    if (!SESSION_ID) {
-      SESSION_ID = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+    var stored = localStorage.getItem('cw_session_id');
+    if (stored) {
+      SESSION_ID = stored;
+    } else {
       localStorage.setItem('cw_session_id', SESSION_ID);
     }
   } catch (e) {
-    // localStorage unavailable (e.g. privacy mode) — fall back to in-memory ID
-    SESSION_ID = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+    console.warn('[ChatWidget] localStorage unavailable, using temporary session ID:', e.message);
   }
+  console.log('[ChatWidget] Session ID:', SESSION_ID);
 
   // ───────────────────────────────────────────────
   // STYLES
@@ -611,10 +612,13 @@
     var controller = new AbortController();
     var timeout = setTimeout(function () { controller.abort(); }, 15000);
 
+    var payload = { chatInput: text, sessionId: SESSION_ID };
+    console.log('[ChatWidget] Sending payload:', payload);
+
     fetch(CONFIG.webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatInput: text, sessionId: SESSION_ID }),
+      body: JSON.stringify(payload),
       signal: controller.signal
     }).then(function (res) {
       clearTimeout(timeout);
