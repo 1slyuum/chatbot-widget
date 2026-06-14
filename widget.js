@@ -37,6 +37,21 @@
   }
 
   // ───────────────────────────────────────────────
+  // SESSION ID — unique per visitor, persisted in localStorage
+  // ───────────────────────────────────────────────
+  var SESSION_ID;
+  try {
+    SESSION_ID = localStorage.getItem('cw_session_id');
+    if (!SESSION_ID) {
+      SESSION_ID = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+      localStorage.setItem('cw_session_id', SESSION_ID);
+    }
+  } catch (e) {
+    // localStorage unavailable (e.g. privacy mode) — fall back to in-memory ID
+    SESSION_ID = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+  }
+
+  // ───────────────────────────────────────────────
   // STYLES
   // ───────────────────────────────────────────────
   var css = `
@@ -599,7 +614,7 @@
     fetch(CONFIG.webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatInput: text }),
+      body: JSON.stringify({ chatInput: text, sessionId: SESSION_ID }),
       signal: controller.signal
     }).then(function (res) {
       clearTimeout(timeout);
