@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChatWidget Automated Test</title>
+</head>
+<body>
+  <h1>Widget self-test</h1>
+  <div id="results"></div>
+
+  <!-- Load widget pointing at the mock webhook -->
+  <script src="../widget.js"
+    data-webhook="/webhook"
+    data-name="Test Bot"
+    data-theme="light"
+    data-chips="✨:Tell me more,💰:Pricing"
+    data-greeting-bubble="true"
+    defer></script>
+
+  <script>
+    function log(name, ok, extra) {
+      var d = document.createElement('div');
+      d.textContent = (ok ? '✅ PASS' : '❌ FAIL') + ' — ' + name + (extra ? ' :: ' + extra : '');
+      d.style.color = ok ? 'green' : 'red';
+      document.getElementById('results').appendChild(d);
+      console.log((ok ? 'PASS' : 'FAIL') + ': ' + name + (extra ? ' :: ' + extra : ''));
+    }
+
+    window.addEventListener('load', function () {
+      setTimeout(runTests, 800);
+    });
+
+    function runTests() {
+      // 1. Widget elements exist
+      log('launcher mounted', !!document.getElementById('cw-launcher'));
+      log('widget panel mounted', !!document.getElementById('cw-widget'));
+      log('messages container mounted', !!document.getElementById('cw-messages'));
+      log('public API exposed', !!(window.ChatWidget && window.ChatWidget.open));
+
+      // 2. Initial AI message + chips rendered
+      var initialBubble = document.querySelector('.cw-bubble.ai');
+      log('initial AI message rendered', !!initialBubble);
+      log('suggestion chips rendered', document.querySelectorAll('.cw-chip').length === 2,
+          'count=' + document.querySelectorAll('.cw-chip').length);
+
+      // 3. Open via API
+      window.ChatWidget.open();
+      setTimeout(function () {
+        log('widget opens via API', document.getElementById('cw-widget').classList.contains('open'));
+
+        // 4. Send a message -> expect a markdown-rendered AI reply
+        var before = document.querySelectorAll('.cw-bubble.user').length;
+        window.ChatWidget.sendMessage('hello there');
+        setTimeout(function () {
+          var userBubbles = document.querySelectorAll('.cw-bubble.user').length;
+          log('user message appended', userBubbles === before + 1, 'user bubbles=' + userBubbles);
+
+          // wait for mock reply (~900ms) + markdown render
+          setTimeout(function () {
+            var aiBubbles = document.querySelectorAll('.cw-bubble.ai');
+            var last = aiBubbles[aiBubbles.length - 1];
+            log('AI reply received', aiBubbles.length >= 2, 'ai bubbles=' + aiBubbles.length);
+            log('markdown bold rendered', !!(last && last.querySelector('strong')));
+            log('markdown list rendered', !!(last && last.querySelector('ul li')));
+            log('markdown link rendered', !!(last && last.querySelector('a[href^="http"]')));
+            log('inline code rendered', !!(last && last.querySelector('code')));
+
+            // 5. Persistence: history saved
+            var keys = Object.keys(localStorage).filter(function(k){return /_history$/.test(k);});
+            log('history persisted to localStorage', keys.length > 0, keys.join(','));
+
+            // 6. Clear conversation
+            window.ChatWidget.clear();
+            setTimeout(function () {
+              log('clear resets to single AI message',
+                  document.querySelectorAll('.cw-bubble.user').length === 0);
+              console.log('ALL_TESTS_DONE');
+            }, 200);
+          }, 1600);
+        }, 200);
+      }, 200);
+    }
+  </script>
+</body>
+</html>
