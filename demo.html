@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChatWidget — Live Demo & Config Builder</title>
+  <style>
+    :root { --acc: #c9a84c; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      margin: 0; background: #0e0f13; color: #e8e8ea; line-height: 1.6;
+    }
+    header {
+      padding: 48px 24px 32px; text-align: center;
+      background: radial-gradient(900px 400px at 50% -10%, rgba(201,168,76,.18), transparent);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    header h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: -.5px; }
+    header p { margin: 0; color: #9aa0aa; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 32px 24px 120px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; color: #c2c6cd; font-weight: 600; }
+    .field small { color: #7c828c; font-size: 11px; }
+    input, select {
+      background: #1a1c22; border: 1px solid rgba(255,255,255,.12); color: #e8e8ea;
+      padding: 9px 12px; border-radius: 9px; font-size: 14px; font-family: inherit;
+    }
+    input[type="color"] { padding: 4px; height: 38px; }
+    input:focus, select:focus { outline: none; border-color: var(--acc); }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .check { display: flex; align-items: center; gap: 8px; }
+    .check input { width: auto; }
+    h2 { font-size: 16px; margin: 28px 0 12px; color: var(--acc); letter-spacing: .3px; }
+    .card { background: #15171d; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 22px; margin-bottom: 18px; }
+    pre {
+      background: #0a0b0e; border: 1px solid rgba(255,255,255,.1); border-radius: 12px;
+      padding: 18px; overflow-x: auto; font-size: 13px; line-height: 1.7; color: #d7dbe2;
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; position: relative;
+    }
+    .copy-btn {
+      position: absolute; top: 12px; right: 12px;
+      background: var(--acc); color: #1a1a1a; border: none; border-radius: 8px;
+      padding: 6px 14px; font-weight: 700; cursor: pointer; font-size: 12px;
+    }
+    .note { background: rgba(201,168,76,.1); border: 1px solid rgba(201,168,76,.3); padding: 14px 16px; border-radius: 10px; font-size: 13px; color: #ddd2b3; }
+    code { background: rgba(255,255,255,.08); padding: 2px 6px; border-radius: 5px; font-size: 13px; }
+    .features { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 12px; margin-top: 16px; }
+    .feat { background: #15171d; border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 14px; font-size: 13px; }
+    .feat b { color: var(--acc); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💬 ChatWidget</h1>
+    <p>Live demo &amp; embed-code builder for your AI chatbot SaaS</p>
+  </header>
+
+  <div class="wrap">
+    <div class="note">
+      The widget is running in the bottom corner of this page. Adjust the options below and the
+      embed snippet updates instantly — click <b>Apply &amp; Reload</b> to preview your changes live.
+    </div>
+
+    <h2>1 · Connection</h2>
+    <div class="card">
+      <div class="field">
+        <label>Webhook URL (n8n) <small>— required. The endpoint your client's bot listens on.</small></label>
+        <input id="f-webhook" placeholder="https://your-n8n.app/webhook/abc123" />
+      </div>
+    </div>
+
+    <h2>2 · Branding</h2>
+    <div class="card grid">
+      <div class="field"><label>Business name</label><input id="f-name" value="Aurora Studio" /></div>
+      <div class="field"><label>Avatar letter</label><input id="f-avatar" placeholder="(auto from name)" /></div>
+      <div class="field"><label>Avatar image URL <small>(optional logo)</small></label><input id="f-avatar-image" placeholder="https://.../logo.png" /></div>
+      <div class="field"><label>Header badge</label><input id="f-badge" value="AI" /></div>
+      <div class="field"><label>Welcome title</label><input id="f-welcome-title" value="Welcome to Aurora Studio" /></div>
+      <div class="field"><label>Welcome subtitle</label><input id="f-welcome-sub" value="Ask me anything — I'm here to help." /></div>
+      <div class="field" style="grid-column:1/-1"><label>Initial greeting message</label><input id="f-initial" value="Hi! 👋 I'm the Aurora assistant. How can I help today?" /></div>
+      <div class="field"><label>Status text</label><input id="f-status" value="Online · replies instantly" /></div>
+      <div class="field"><label>Powered-by text</label><input id="f-powered" value="Aurora Studio" /></div>
+      <div class="field" style="grid-column:1/-1"><label>Suggestion chips <small>— "emoji:label" comma-separated</small></label><input id="f-chips" value="✨:What do you offer?,💰:Pricing,📞:Contact us" /></div>
+    </div>
+
+    <h2>3 · Appearance</h2>
+    <div class="card grid">
+      <div class="field"><label>Theme</label>
+        <select id="f-theme"><option value="auto">Auto</option><option value="light" selected>Light</option><option value="dark">Dark</option></select>
+      </div>
+      <div class="field"><label>Position</label>
+        <select id="f-position"><option value="bottom-right" selected>Bottom right</option><option value="bottom-left">Bottom left</option></select>
+      </div>
+      <div class="field"><label>Primary color</label><div class="row"><input type="color" id="f-color" value="#c9a84c" /><input id="f-color-text" value="#c9a84c" style="flex:1" /></div></div>
+      <div class="field"><label>Launcher size (px)</label><input id="f-launcher-size" type="number" value="60" /></div>
+      <div class="field"><label>Bubble radius</label><input id="f-bubble-radius" value="18px" /></div>
+      <div class="field"><label>Panel radius</label><input id="f-panel-radius" value="20px" /></div>
+    </div>
+
+    <h2>4 · Behaviour</h2>
+    <div class="card grid">
+      <div class="check"><input type="checkbox" id="f-persist" checked /><label for="f-persist">Persist chat history</label></div>
+      <div class="check"><input type="checkbox" id="f-sound" /><label for="f-sound">Notification sound</label></div>
+      <div class="check"><input type="checkbox" id="f-greeting" /><label for="f-greeting">Greeting teaser bubble</label></div>
+      <div class="check"><input type="checkbox" id="f-auto-open" /><label for="f-auto-open">Auto-open on load</label></div>
+      <div class="check"><input type="checkbox" id="f-show-powered" checked /><label for="f-show-powered">Show "Powered by"</label></div>
+      <div class="field"><label>Timeout (ms)</label><input id="f-timeout" type="number" value="60000" /></div>
+    </div>
+
+    <h2>5 · Embed code</h2>
+    <div class="card">
+      <pre id="snippet"><button class="copy-btn" onclick="copySnippet()">Copy</button><code id="snippet-code"></code></pre>
+      <div class="row" style="margin-top:14px">
+        <button class="copy-btn" style="position:static" onclick="applyAndReload()">Apply &amp; Reload Preview</button>
+        <small style="color:#7c828c">Reloads this page with the new config so you can test it.</small>
+      </div>
+    </div>
+
+    <h2>Feature highlights</h2>
+    <div class="features">
+      <div class="feat"><b>Markdown</b> — bold, lists, links &amp; code in AI replies</div>
+      <div class="feat"><b>Chat persistence</b> — history survives page reloads</div>
+      <div class="feat"><b>Unread badge</b> — when a reply arrives while closed</div>
+      <div class="feat"><b>Robust loading</b> — works with async/defer/head placement</div>
+      <div class="feat"><b>Accessibility</b> — ARIA, keyboard &amp; Esc-to-close</div>
+      <div class="feat"><b>Auto-contrast</b> — text color picked for readability</div>
+      <div class="feat"><b>JS API</b> — <code>ChatWidget.open()</code>, <code>.sendMessage()</code></div>
+      <div class="feat"><b>Smart errors</b> — friendly messages + retry</div>
+    </div>
+  </div>
+
+  <!-- The widget itself. The script tag below is regenerated by the builder. -->
+  <script id="cw-widget-script"></script>
+
+  <script>
+    // ── Build config from URL params (set by Apply & Reload) ──
+    var params = new URLSearchParams(location.search);
+    var defaults = {
+      webhook: 'https://httpbin.org/post', // demo echo endpoint (won't return a real bot reply)
+      name: 'Aurora Studio',
+      color: '#c9a84c',
+      theme: 'light',
+      position: 'bottom-right'
+    };
+
+    function getDataAttrs() {
+      var map = {
+        'data-webhook': 'webhook', 'data-name': 'name', 'data-avatar': 'avatar',
+        'data-avatar-image': 'avatar-image', 'data-badge': 'badge',
+        'data-welcome-title': 'welcome-title', 'data-welcome-sub': 'welcome-sub',
+        'data-initial-message': 'initial', 'data-status-text': 'status',
+        'data-powered-by': 'powered', 'data-chips': 'chips', 'data-theme': 'theme',
+        'data-position': 'position', 'data-color-primary': 'color',
+        'data-launcher-size': 'launcher-size', 'data-bubble-radius': 'bubble-radius',
+        'data-panel-radius': 'panel-radius', 'data-timeout': 'timeout',
+        'data-persist-chat': 'persist', 'data-sound': 'sound',
+        'data-greeting-bubble': 'greeting', 'data-auto-open': 'auto-open',
+        'data-show-powered-by': 'show-powered'
+      };
+      var out = {};
+      for (var attr in map) {
+        var v = params.get(map[attr]);
+        if (v !== null && v !== '') out[attr] = v;
+      }
+      return out;
+    }
+
+    // Mount the widget with current params.
+    var scriptEl = document.getElementById('cw-widget-script');
+    var attrs = getDataAttrs();
+    if (!attrs['data-webhook']) attrs['data-webhook'] = defaults.webhook;
+    Object.keys(attrs).forEach(function (k) { scriptEl.setAttribute(k, attrs[k]); });
+    scriptEl.src = 'widget.js?v=' + Date.now();
+
+    // ── Sync form fields from current params ──
+    function setVal(id, key, def) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var v = params.get(key);
+      if (v !== null) {
+        if (el.type === 'checkbox') el.checked = /^(true|1|yes|on)$/i.test(v);
+        else el.value = v;
+      }
+    }
+    setVal('f-webhook','webhook'); setVal('f-name','name'); setVal('f-avatar','avatar');
+    setVal('f-avatar-image','avatar-image'); setVal('f-badge','badge');
+    setVal('f-welcome-title','welcome-title'); setVal('f-welcome-sub','welcome-sub');
+    setVal('f-initial','initial'); setVal('f-status','status'); setVal('f-powered','powered');
+    setVal('f-chips','chips'); setVal('f-theme','theme'); setVal('f-position','position');
+    setVal('f-color','color'); setVal('f-color-text','color'); setVal('f-launcher-size','launcher-size');
+    setVal('f-bubble-radius','bubble-radius'); setVal('f-panel-radius','panel-radius');
+    setVal('f-timeout','timeout'); setVal('f-persist','persist'); setVal('f-sound','sound');
+    setVal('f-greeting','greeting'); setVal('f-auto-open','auto-open'); setVal('f-show-powered','show-powered');
+
+    // Keep color picker + text input in sync, and live-update accent.
+    var cp = document.getElementById('f-color'), ct = document.getElementById('f-color-text');
+    cp.addEventListener('input', function(){ ct.value = cp.value; document.documentElement.style.setProperty('--acc', cp.value); buildSnippet(); });
+    ct.addEventListener('input', function(){ cp.value = ct.value; document.documentElement.style.setProperty('--acc', ct.value); buildSnippet(); });
+    document.documentElement.style.setProperty('--acc', cp.value);
+
+    // ── Build the embed snippet from the form ──
+    var WIDGET_URL = 'https://1slyuum.github.io/chatbot-widget/widget.js';
+    function val(id){ var e=document.getElementById(id); return e.type==='checkbox'?e.checked:e.value.trim(); }
+    function buildSnippet() {
+      var lines = ['<script src="' + WIDGET_URL + '"'];
+      function add(attr, v, skipIf) {
+        if (v === '' || v === skipIf || v === undefined) return;
+        lines.push('  ' + attr + '="' + String(v).replace(/"/g,'&quot;') + '"');
+      }
+      add('data-webhook', val('f-webhook') || 'YOUR_N8N_WEBHOOK_URL');
+      add('data-name', val('f-name'));
+      add('data-avatar', val('f-avatar'));
+      add('data-avatar-image', val('f-avatar-image'));
+      add('data-badge', val('f-badge'), 'AI');
+      add('data-welcome-title', val('f-welcome-title'));
+      add('data-welcome-sub', val('f-welcome-sub'));
+      add('data-initial-message', val('f-initial'));
+      add('data-status-text', val('f-status'), 'Online · replies instantly');
+      add('data-powered-by', val('f-powered'));
+      add('data-chips', val('f-chips'));
+      add('data-theme', val('f-theme'), 'auto');
+      add('data-position', val('f-position'), 'bottom-right');
+      add('data-color-primary', val('f-color-text'), '#c9a84c');
+      add('data-launcher-size', val('f-launcher-size'), '60');
+      add('data-bubble-radius', val('f-bubble-radius'), '18px');
+      add('data-panel-radius', val('f-panel-radius'), '20px');
+      add('data-timeout', val('f-timeout'), '60000');
+      if (!val('f-persist')) add('data-persist-chat', 'false');
+      if (val('f-sound')) add('data-sound', 'true');
+      if (val('f-greeting')) add('data-greeting-bubble', 'true');
+      if (val('f-auto-open')) add('data-auto-open', 'true');
+      if (!val('f-show-powered')) add('data-show-powered-by', 'false');
+      lines.push('  defer><\/script>');
+      document.getElementById('snippet-code').textContent = lines.join('\n');
+    }
+
+    document.querySelectorAll('input, select').forEach(function(el){
+      el.addEventListener('input', buildSnippet);
+      el.addEventListener('change', buildSnippet);
+    });
+    buildSnippet();
+
+    function copySnippet() {
+      navigator.clipboard.writeText(document.getElementById('snippet-code').textContent)
+        .then(function(){ var b=document.querySelector('.copy-btn'); var t=b.textContent; b.textContent='Copied!'; setTimeout(function(){b.textContent=t;},1500); });
+    }
+
+    function applyAndReload() {
+      var p = new URLSearchParams();
+      function put(key, id, def){ var v=val(id); if(v!==''&&v!==def&&v!==false) p.set(key, v===true?'true':v); }
+      put('webhook','f-webhook'); put('name','f-name'); put('avatar','f-avatar');
+      put('avatar-image','f-avatar-image'); put('badge','f-badge','AI');
+      put('welcome-title','f-welcome-title'); put('welcome-sub','f-welcome-sub');
+      put('initial','f-initial'); put('status','f-status'); put('powered','f-powered');
+      put('chips','f-chips'); put('theme','f-theme','auto'); put('position','f-position','bottom-right');
+      put('color','f-color-text','#c9a84c'); put('launcher-size','f-launcher-size','60');
+      put('bubble-radius','f-bubble-radius','18px'); put('panel-radius','f-panel-radius','20px');
+      put('timeout','f-timeout','60000');
+      if(!val('f-persist')) p.set('persist','false');
+      if(val('f-sound')) p.set('sound','true');
+      if(val('f-greeting')) p.set('greeting','true');
+      if(val('f-auto-open')) p.set('auto-open','true');
+      if(!val('f-show-powered')) p.set('show-powered','false');
+      location.search = p.toString();
+    }
+  </script>
+</body>
+</html>
