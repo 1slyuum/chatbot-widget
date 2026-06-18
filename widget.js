@@ -1334,7 +1334,9 @@
 
     // ── Send message ──
     function sendMessage() {
-      var text = input.value.trim();
+      // Strip any newlines that may have been injected by the Enter key before
+      // preventDefault() could fire (common on mobile / some IME keyboards).
+      var text = input.value.replace(/[\r\n]+/g, ' ').trim();
       if (!text || isLoading) return;
       if (!CONFIG.webhookUrl) {
         appendErrorMessage('Chat is not configured (missing webhook URL).', text);
@@ -1463,12 +1465,28 @@
     sendBtn.addEventListener('click', sendMessage);
     clearBtn.addEventListener('click', clearConversation);
 
-    input.addEventListener('input', autoResize);
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
+        e.stopPropagation();
         sendMessage();
       }
+    });
+    // Belt-and-suspenders: catch any newline that still sneaked in
+    // (e.g. on Android virtual keyboards that fire input before keydown).
+    input.addEventListener('input', function () {
+      if (input.value.indexOf('\n') !== -1 || input.value.indexOf('\r') !== -1) {
+        var clean = input.value.replace(/[\r\n]+/g, ' ').trim();
+        if (clean) {
+          input.value = clean;
+          sendMessage();
+        } else {
+          input.value = '';
+        }
+        autoResize();
+        return;
+      }
+      autoResize();
     });
 
     // Suggestion chip clicks (event delegation).
