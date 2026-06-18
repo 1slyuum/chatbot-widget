@@ -690,6 +690,8 @@
     color: var(--cw-bubble-user-text);
     font-weight: 500;
     border-bottom-right-radius: 4px;
+    white-space: normal;
+    word-break: break-word;
   }
   /* Markdown styling inside AI bubbles */
   .cw-bubble.ai p { margin: 0 0 8px; }
@@ -1189,7 +1191,8 @@
         bubble.innerHTML = renderMarkdown(text);
       } else {
         bubble.textContent = text;
-        bubble.style.whiteSpace = 'pre-wrap';
+        bubble.style.whiteSpace = 'normal';
+        bubble.style.wordBreak = 'break-word';
       }
 
       var time = document.createElement('div');
