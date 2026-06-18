@@ -648,6 +648,9 @@
     display: flex; align-items: flex-end; gap: 8px;
     animation: cw-fadeUp 0.3s ease forwards;
   }
+  .cw-msg-row > div:last-child {
+    max-width: 78%;
+  }
   @keyframes cw-fadeUp {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -670,14 +673,15 @@
     font-size: 13px;
   }
   .cw-bubble {
-    max-width: 80%;
+    display: inline-block;
+    max-width: 100%;
     padding: 11px 15px;
     border-radius: var(--cw-radius-sm);
     font-size: 13.5px;
     line-height: 1.6;
     position: relative;
-    word-wrap: break-word;
     overflow-wrap: break-word;
+    word-break: break-word;
   }
   .cw-bubble.ai {
     background: var(--cw-bubble-ai-bg);
@@ -1177,7 +1181,7 @@
       }
 
       var wrap = document.createElement('div');
-      wrap.style.maxWidth = '100%';
+      wrap.style.cssText = 'max-width: 100%; min-width: 0; display: flex; flex-direction: column; align-items: ' + (role === 'user' ? 'flex-end' : 'flex-start') + ';';
       var bubble = document.createElement('div');
       bubble.className = 'cw-bubble ' + role;
       // Per-message direction so a mixed LTR/RTL conversation each aligns correctly.
