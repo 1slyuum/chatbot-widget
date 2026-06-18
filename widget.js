@@ -648,9 +648,6 @@
     display: flex; align-items: flex-end; gap: 8px;
     animation: cw-fadeUp 0.3s ease forwards;
   }
-  .cw-msg-row > div:last-child {
-    max-width: 78%;
-  }
   @keyframes cw-fadeUp {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -673,15 +670,14 @@
     font-size: 13px;
   }
   .cw-bubble {
-    display: inline-block;
-    max-width: 100%;
+    max-width: 80%;
     padding: 11px 15px;
     border-radius: var(--cw-radius-sm);
     font-size: 13.5px;
     line-height: 1.6;
     position: relative;
+    word-wrap: break-word;
     overflow-wrap: break-word;
-    word-break: break-word;
   }
   .cw-bubble.ai {
     background: var(--cw-bubble-ai-bg);
@@ -774,7 +770,7 @@
     transition: border-color 0.2s ease;
   }
   .cw-input-wrap:focus-within { border-color: ${CONFIG.primaryColor}66; }
-  .cw-textarea {
+    .cw-textarea {
     flex: 1;
     background: transparent;
     border: none; outline: none;
@@ -786,6 +782,9 @@
     max-height: 100px;
     line-height: 1.5;
     padding: 0;
+    display: block;
+    width: 100%;
+    margin: 0;
   }
   .cw-textarea::placeholder { color: var(--cw-placeholder); opacity: 1; }
   /* Prevent iOS auto-zoom on focus (any input < 16px triggers it). */
@@ -1181,7 +1180,7 @@
       }
 
       var wrap = document.createElement('div');
-      wrap.style.cssText = 'max-width: 100%; min-width: 0; display: flex; flex-direction: column; align-items: ' + (role === 'user' ? 'flex-end' : 'flex-start') + ';';
+      wrap.style.maxWidth = '100%';
       var bubble = document.createElement('div');
       bubble.className = 'cw-bubble ' + role;
       // Per-message direction so a mixed LTR/RTL conversation each aligns correctly.
@@ -1190,6 +1189,7 @@
         bubble.innerHTML = renderMarkdown(text);
       } else {
         bubble.textContent = text;
+        bubble.style.whiteSpace = 'pre-wrap';
       }
 
       var time = document.createElement('div');
@@ -1210,7 +1210,12 @@
     }
 
     function scrollToBottom() {
-      messages.scrollTop = messages.scrollHeight;
+      setTimeout(function() {
+        messages.scrollTo({
+          top: messages.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 50);
     }
 
     function showTyping() {
@@ -1252,7 +1257,8 @@
       retryBtn.onclick = function () {
         row.remove();
         input.value = originalText;
-        sendMessage();
+        autoResize();
+        input.focus();
       };
       bubble.appendChild(msgSpan);
       bubble.appendChild(retryBtn);
@@ -1333,14 +1339,15 @@
     // ── Input helpers ──
     function autoResize() {
       input.style.height = 'auto';
-      input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+      var newHeight = input.scrollHeight;
+      if (newHeight > 0) {
+        input.style.height = Math.min(newHeight, 100) + 'px';
+      }
     }
 
     // ── Send message ──
     function sendMessage() {
-      // Strip any newlines that may have been injected by the Enter key before
-      // preventDefault() could fire (common on mobile / some IME keyboards).
-      var text = input.value.replace(/[\r\n]+/g, ' ').trim();
+      var text = input.value.trim();
       if (!text || isLoading) return;
       if (!CONFIG.webhookUrl) {
         appendErrorMessage('Chat is not configured (missing webhook URL).', text);
@@ -1469,28 +1476,14 @@
     sendBtn.addEventListener('click', sendMessage);
     clearBtn.addEventListener('click', clearConversation);
 
+    input.addEventListener('input', autoResize);
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) {
+        // On mobile, Enter usually means "Done" or "Go". 
+        // We prevent default to stop the newline, but let the user send.
         e.preventDefault();
-        e.stopPropagation();
         sendMessage();
       }
-    });
-    // Belt-and-suspenders: catch any newline that still sneaked in
-    // (e.g. on Android virtual keyboards that fire input before keydown).
-    input.addEventListener('input', function () {
-      if (input.value.indexOf('\n') !== -1 || input.value.indexOf('\r') !== -1) {
-        var clean = input.value.replace(/[\r\n]+/g, ' ').trim();
-        if (clean) {
-          input.value = clean;
-          sendMessage();
-        } else {
-          input.value = '';
-        }
-        autoResize();
-        return;
-      }
-      autoResize();
     });
 
     // Suggestion chip clicks (event delegation).
@@ -1498,6 +1491,7 @@
       var chip = e.target.closest('.cw-chip');
       if (!chip) return;
       input.value = chip.getAttribute('data-chip') || chip.textContent.trim();
+      autoResize();
       sendMessage();
     });
 
