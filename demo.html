@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ChatWidget — Live Demo & Config Builder</title>
+  <title>AI Chatbot Platform — Live Demo & Embed Builder</title>
   <style>
     :root { --acc: #c9a84c; }
     * { box-sizing: border-box; }
@@ -36,7 +36,7 @@
     h2 { font-size: 16px; margin: 28px 0 12px; color: var(--acc); letter-spacing: .3px; }
     .card { background: #15171d; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 22px; margin-bottom: 18px; }
     pre {
-      background: #0a0b0e; border: 1px solid rgba(255,255,255,.1); border-radius: 12px;
+      background: #0a0b0e; border: 1px solid rgba(255,255,255,.1; border-radius: 12px;
       padding: 18px; overflow-x: auto; font-size: 13px; line-height: 1.7; color: #d7dbe2;
       font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; position: relative;
     }
@@ -54,108 +54,102 @@
 </head>
 <body>
   <header>
-    <h1>💬 ChatWidget</h1>
-    <p>Live demo &amp; embed-code builder for your AI chatbot SaaS</p>
+    <h1>💬 Conversational AI Concierge</h1>
+    <p>Live Demo, Real-Time Personalization & Embed Snippet Generator</p>
   </header>
 
   <div class="wrap">
     <div class="note">
-      The widget is running in the bottom corner of this page. Adjust the options below and the
-      embed snippet updates instantly — click <b>Apply &amp; Reload</b> to preview your changes live.
+      🚀 <b>Growth Hacker Mode:</b> The live chatbot is deployed in the bottom corner. You can pre-configure this page via URL query parameters to instantly show a branded version to your cold outreach leads. Adjust settings below and hit <b>Apply &amp; Reload Preview</b>.
     </div>
 
-    <h2>1 · Connection</h2>
+    <h2>1 · Core Connection</h2>
     <div class="card">
       <div class="field">
-        <label>Webhook URL (n8n) <small>— required. The endpoint your client's bot listens on.</small></label>
-        <input id="f-webhook" placeholder="https://your-n8n.app/webhook/abc123" />
+        <label>Webhook URL (n8n Automation Engine) <small>— Required. The bridge to your vector database and AI model.</small></label>
+        <input id="f-webhook" placeholder="https://your-n8n-instance.com/webhook/v1/chat" />
       </div>
     </div>
 
-    <h2>2 · Branding</h2>
+    <h2>2 · Instant Enterprise Branding</h2>
     <div class="card grid">
-      <div class="field"><label>Business name</label><input id="f-name" value="Aurora Studio" /></div>
-      <div class="field"><label>Avatar letter</label><input id="f-avatar" placeholder="(auto from name)" /></div>
-      <div class="field"><label>Avatar image URL <small>(optional logo)</small></label><input id="f-avatar-image" placeholder="https://.../logo.png" /></div>
-      <div class="field"><label>Header badge</label><input id="f-badge" value="AI" /></div>
-      <div class="field"><label>Welcome title</label><input id="f-welcome-title" value="Welcome to Aurora Studio" /></div>
-      <div class="field"><label>Welcome subtitle</label><input id="f-welcome-sub" value="Ask me anything — I'm here to help." /></div>
-      <div class="field" style="grid-column:1/-1"><label>Initial greeting message</label><input id="f-initial" value="Hi! 👋 I'm the Aurora assistant. How can I help today?" /></div>
-      <div class="field"><label>Status text</label><input id="f-status" value="Online · replies instantly" /></div>
-      <div class="field"><label>Powered-by text</label><input id="f-powered" value="Aurora Studio" /></div>
-      <div class="field" style="grid-column:1/-1"><label>Suggestion chips <small>— "emoji:label" comma-separated</small></label><input id="f-chips" value="✨:What do you offer?,💰:Pricing,📞:Contact us" /></div>
+      <div class="field"><label>Business Name</label><input id="f-name" value="Apex Growth Solution" /></div>
+      <div class="field"><label>Avatar Initial Letter</label><input id="f-avatar" placeholder="(Auto-generated from name)" /></div>
+      <div class="field"><label>Avatar Image URL <small>(Brand Logo PNG)</small></label><input id="f-avatar-image" placeholder="https://your-client-site.com/logo.png" /></div>
+      <div class="field"><label>Header Badge Text</label><input id="f-badge" value="AI Expert" /></div>
+      <div class="field"><label>Panel Welcome Title</label><input id="f-welcome-title" value="Let's Build Your Pipeline" /></div>
+      <div class="field"><label>Panel Welcome Subtitle</label><input id="f-welcome-sub" value="Ask about our growth packages or qualification flow." /></div>
+      <div class="field" style="grid-column:1/-1"><label>Initial Autonomous Greeting Message</label><input id="f-initial" value="Hi! 👋 I'm your digital growth strategist. Looking to scale your lead generation or optimize operations today?" /></div>
+      <div class="field"><label>Agent Real-Time Status</label><input id="f-status" value="Online · Powered by AI Automation" /></div>
+      <div class="field"><label>White-Label Brand Text</label><input id="f-powered" value="AI Automation Systems" /></div>
+      <div class="field" style="grid-column:1/-1"><label>Conversion Conversion Suggestion Chips <small>— Format: "emoji:label" split by commas</small></label><input id="f-chips" value="🚀:View Services,💰:ROI Calculator,📞:Book Growth Call" /></div>
     </div>
 
-    <h2>3 · Language &amp; direction</h2>
+    <h2>3 · Language Localization</h2>
     <div class="card grid">
-      <div class="field"><label>Language (BCP-47) <small>— e.g. en, ar, he, fr, es, zh. Affects time format &amp; RTL.</small></label>
-        <input id="f-lang" placeholder="(auto from page / browser)" /></div>
-      <div class="field"><label>Text direction</label>
-        <select id="f-dir"><option value="auto" selected>Auto (detect)</option><option value="ltr">Left-to-right</option><option value="rtl">Right-to-left</option></select>
+      <div class="field"><label>Language Locale (BCP-47) <small>— e.g. en, ar, fr, es. Auto-formats dates, tokens & layouts.</small></label>
+        <input id="f-lang" placeholder="(Inherits from page context / browser)" /></div>
+      <div class="field"><label>Text Directionality Layout</label>
+        <select id="f-dir"><option value="auto" selected>Auto-Detect Dynamic Alignment</option><option value="ltr">LTR (Left-to-Right)</option><option value="rtl">RTL (Right-to-Left / Arabic-Hebrew)</option></select>
       </div>
       <div class="note" style="grid-column:1/-1">
-        💡 Translate the bot's UI by setting your own text: use <code>data-placeholder</code>,
-        <code>data-status-text</code>, <code>data-welcome-title</code>, <code>data-initial-message</code>,
-        <code>data-chips</code>, and the <code>data-text-*</code> / <code>data-err-*</code> attributes (see README).
-        RTL languages like Arabic &amp; Hebrew are auto-detected and the whole layout mirrors.
+        💡 <b>Global Layout Optimization:</b> Setting RTL or right-to-left languages automatically flips the entire UI alignment, input text direction, and chat bubbles seamlessly for native localized experiences.
       </div>
     </div>
 
-    <h2>4 · Appearance</h2>
+    <h2>4 · UI / UX Customization</h2>
     <div class="card grid">
-      <div class="field"><label>Theme</label>
-        <select id="f-theme"><option value="auto">Auto</option><option value="light" selected>Light</option><option value="dark">Dark</option></select>
+      <div class="field"><label>Visual Interface Theme</label>
+        <select id="f-theme"><option value="auto">System Sync</option><option value="light" selected>Premium Light</option><option value="dark">Immersive Dark</option></select>
       </div>
-      <div class="field"><label>Position</label>
-        <select id="f-position"><option value="bottom-right" selected>Bottom right</option><option value="bottom-left">Bottom left</option></select>
+      <div class="field"><label>Screen Anchoring Position</label>
+        <select id="f-position"><option value="bottom-right" selected>Bottom-Right Anchor</option><option value="bottom-left">Bottom-Left Anchor</option></select>
       </div>
-      <div class="field"><label>Primary color</label><div class="row"><input type="color" id="f-color" value="#c9a84c" /><input id="f-color-text" value="#c9a84c" style="flex:1" /></div></div>
-      <div class="field"><label>Launcher size (px)</label><input id="f-launcher-size" type="number" value="60" /></div>
-      <div class="field"><label>Bubble radius</label><input id="f-bubble-radius" value="18px" /></div>
-      <div class="field"><label>Panel radius</label><input id="f-panel-radius" value="20px" /></div>
+      <div class="field"><label>Brand Primary Color Accent</label><div class="row"><input type="color" id="f-color" value="#c9a84c" /><input id="f-color-text" value="#c9a84c" style="flex:1" /></div></div>
+      <div class="field"><label>Launcher Button Dimension (px)</label><input id="f-launcher-size" type="number" value="60" /></div>
+      <div class="field"><label>Chat Message Bubble Radius</label><input id="f-bubble-radius" value="18px" /></div>
+      <div class="field"><label>Main Panel Border Radius</label><input id="f-panel-radius" value="20px" /></div>
     </div>
 
-    <h2>5 · Behaviour</h2>
+    <h2>5 · Conversion & Engagement Mechanics</h2>
     <div class="card grid">
-      <div class="check"><input type="checkbox" id="f-persist" checked /><label for="f-persist">Persist chat history</label></div>
-      <div class="check"><input type="checkbox" id="f-sound" /><label for="f-sound">Notification sound</label></div>
-      <div class="check"><input type="checkbox" id="f-greeting" /><label for="f-greeting">Greeting teaser bubble</label></div>
-      <div class="check"><input type="checkbox" id="f-auto-open" /><label for="f-auto-open">Auto-open on load</label></div>
-      <div class="check"><input type="checkbox" id="f-show-powered" checked /><label for="f-show-powered">Show "Powered by"</label></div>
-      <div class="field"><label>Timeout (ms)</label><input id="f-timeout" type="number" value="60000" /></div>
+      <div class="check"><input type="checkbox" id="f-persist" checked /><label for="f-persist">Retain Session Context & History</label></div>
+      <div class="check"><input type="checkbox" id="f-sound" /><label for="f-sound">Auditory Notification Chime</label></div>
+      <div class="check"><input type="checkbox" id="f-greeting" /><label for="f-greeting">Display Proactive Engagement Teaser Bubble</label></div>
+      <div class="check"><input type="checkbox" id="f-auto-open" /><label for="f-auto-open">Trigger Auto-Open Panel on Session Load</label></div>
+      <div class="check"><input type="checkbox" id="f-show-powered" checked /><label for="f-show-powered">Display Vendor White-Label Attribution</label></div>
+      <div class="field"><label>API Request Timeout (ms)</label><input id="f-timeout" type="number" value="60000" /></div>
     </div>
 
-    <h2>6 · Embed code</h2>
+    <h2>6 · Production Production Deployment Code</h2>
     <div class="card">
-      <pre id="snippet"><button class="copy-btn" onclick="copySnippet()">Copy</button><code id="snippet-code"></code></pre>
+      <pre id="snippet"><button class="copy-btn" onclick="copySnippet()">Copy Embed Script</button><code id="snippet-code"></code></pre>
       <div class="row" style="margin-top:14px">
-        <button class="copy-btn" style="position:static" onclick="applyAndReload()">Apply &amp; Reload Preview</button>
-        <small style="color:#7c828c">Reloads this page with the new config so you can test it.</small>
+        <button class="copy-btn" style="position:static" onclick="applyAndReload()">Apply &amp; Reload Live Preview</button>
+        <small style="color:#7c828c">Re-initializes the DOM environment with your newly parameterized configurations instantly.</small>
       </div>
     </div>
 
-    <h2>Feature highlights</h2>
+    <h2>Platform Infrastructure Capabilities</h2>
     <div class="features">
-      <div class="feat"><b>Markdown</b> — bold, lists, links &amp; code in AI replies</div>
-      <div class="feat"><b>Chat persistence</b> — history survives page reloads</div>
-      <div class="feat"><b>Unread badge</b> — when a reply arrives while closed</div>
-      <div class="feat"><b>Robust loading</b> — works with async/defer/head placement</div>
-      <div class="feat"><b>Accessibility</b> — ARIA, keyboard &amp; Esc-to-close</div>
-      <div class="feat"><b>Auto-contrast</b> — text color picked for readability</div>
-      <div class="feat"><b>JS API</b> — <code>ChatWidget.open()</code>, <code>.sendMessage()</code></div>
-      <div class="feat"><b>Smart errors</b> — friendly messages + retry</div>
+      <div class="feat"><b>Rich Text Output</b> — Native markdown execution including tabular formats, lists, and embedded URLs.</div>
+      <div class="feat"><b>Persistent State Architecture</b> — Memory matrix survives full user session reloads seamlessly.</div>
+      <div class="feat"><b>Omnidirectional Flow Sync</b> — Automatically re-routes UI structural grids upon RTL/Arabic input triggers.</div>
+      <div class="feat"><b>Dynamic Context Injection</b> — Seamless integration with webhooks to fetch calendars, lead sheets, or CRM systems.</div>
+      <div class="feat"><b>Accessible Execution Grid</b> — Complete adherence to strict WAI-ARIA UX standards and escape execution traps.</div>
+      <div class="feat"><b>Autonomous Contrast Computations</b> — Dynamic engine evaluates brand background hex inputs to ensure high text contrast readability.</div>
     </div>
   </div>
 
-  <!-- The widget itself. The script tag below is regenerated by the builder. -->
+  <!-- Dynamic Script Mount Node -->
   <script id="cw-widget-script"></script>
 
   <script>
-    // ── Build config from URL params (set by Apply & Reload) ──
+    // ── Target Configuration Matrix from Parameters ──
     var params = new URLSearchParams(location.search);
     var defaults = {
-      webhook: 'https://httpbin.org/post', // demo echo endpoint (won't return a real bot reply)
-      name: 'Aurora Studio',
+      webhook: 'https://httpbin.org/post', 
+      name: 'Apex Growth Solution',
       color: '#c9a84c',
       theme: 'light',
       position: 'bottom-right'
@@ -184,14 +178,14 @@
       return out;
     }
 
-    // Mount the widget with current params.
+    // Initialize Widget State Injection
     var scriptEl = document.getElementById('cw-widget-script');
     var attrs = getDataAttrs();
     if (!attrs['data-webhook']) attrs['data-webhook'] = defaults.webhook;
     Object.keys(attrs).forEach(function (k) { scriptEl.setAttribute(k, attrs[k]); });
     scriptEl.src = 'widget.js?v=' + Date.now();
 
-    // ── Sync form fields from current params ──
+    // ── Sync UI Matrix To Reflect Incoming URL Parameters ──
     function setVal(id, key, def) {
       var el = document.getElementById(id);
       if (!el) return;
@@ -212,13 +206,13 @@
     setVal('f-timeout','timeout'); setVal('f-persist','persist'); setVal('f-sound','sound');
     setVal('f-greeting','greeting'); setVal('f-auto-open','auto-open'); setVal('f-show-powered','show-powered');
 
-    // Keep color picker + text input in sync, and live-update accent.
+    // Real-Time Theme & Color Synchronization Listeners
     var cp = document.getElementById('f-color'), ct = document.getElementById('f-color-text');
     cp.addEventListener('input', function(){ ct.value = cp.value; document.documentElement.style.setProperty('--acc', cp.value); buildSnippet(); });
     ct.addEventListener('input', function(){ cp.value = ct.value; document.documentElement.style.setProperty('--acc', ct.value); buildSnippet(); });
     document.documentElement.style.setProperty('--acc', cp.value);
 
-    // ── Build the embed snippet from the form ──
+    // ── Script Compilation Logic ──
     var WIDGET_URL = 'https://1slyuum.github.io/chatbot-widget/widget.js';
     function val(id){ var e=document.getElementById(id); return e.type==='checkbox'?e.checked:e.value.trim(); }
     function buildSnippet() {
@@ -231,11 +225,11 @@
       add('data-name', val('f-name'));
       add('data-avatar', val('f-avatar'));
       add('data-avatar-image', val('f-avatar-image'));
-      add('data-badge', val('f-badge'), 'AI');
+      add('data-badge', val('f-badge'), 'AI Expert');
       add('data-welcome-title', val('f-welcome-title'));
       add('data-welcome-sub', val('f-welcome-sub'));
       add('data-initial-message', val('f-initial'));
-      add('data-status-text', val('f-status'), 'Online · replies instantly');
+      add('data-status-text', val('f-status'), 'Online · Powered by AI Automation');
       add('data-powered-by', val('f-powered'));
       add('data-chips', val('f-chips'));
       add('data-theme', val('f-theme'), 'auto');
@@ -264,14 +258,14 @@
 
     function copySnippet() {
       navigator.clipboard.writeText(document.getElementById('snippet-code').textContent)
-        .then(function(){ var b=document.querySelector('.copy-btn'); var t=b.textContent; b.textContent='Copied!'; setTimeout(function(){b.textContent=t;},1500); });
+        .then(function(){ var b=document.querySelector('.copy-btn'); var t=b.textContent; b.textContent='Copied Script!'; setTimeout(function(){b.textContent=t;},1500); });
     }
 
     function applyAndReload() {
       var p = new URLSearchParams();
       function put(key, id, def){ var v=val(id); if(v!==''&&v!==def&&v!==false) p.set(key, v===true?'true':v); }
       put('webhook','f-webhook'); put('name','f-name'); put('avatar','f-avatar');
-      put('avatar-image','f-avatar-image'); put('badge','f-badge','AI');
+      put('avatar-image','f-avatar-image'); put('badge','f-badge','AI Expert');
       put('welcome-title','f-welcome-title'); put('welcome-sub','f-welcome-sub');
       put('initial','f-initial'); put('status','f-status'); put('powered','f-powered');
       put('chips','f-chips'); put('theme','f-theme','auto'); put('position','f-position','bottom-right');
