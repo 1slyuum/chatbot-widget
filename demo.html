@@ -1,285 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Chatbot Platform — Live Demo & Embed Builder</title>
-  <style>
-    :root { --acc: #c9a84c; }
-    * { box-sizing: border-box; }
-    body {
-      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-      margin: 0; background: #0e0f13; color: #e8e8ea; line-height: 1.6;
-    }
-    header {
-      padding: 48px 24px 32px; text-align: center;
-      background: radial-gradient(900px 400px at 50% -10%, rgba(201,168,76,.18), transparent);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    header h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: -.5px; }
-    header p { margin: 0; color: #9aa0aa; }
-    .wrap { max-width: 960px; margin: 0 auto; padding: 32px 24px 120px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
-    .field { display: flex; flex-direction: column; gap: 6px; }
-    .field label { font-size: 13px; color: #c2c6cd; font-weight: 600; }
-    .field small { color: #7c828c; font-size: 11px; }
-    input, select {
-      background: #1a1c22; border: 1px solid rgba(255,255,255,.12); color: #e8e8ea;
-      padding: 9px 12px; border-radius: 9px; font-size: 14px; font-family: inherit;
-    }
-    input[type="color"] { padding: 4px; height: 38px; }
-    input:focus, select:focus { outline: none; border-color: var(--acc); }
-    .row { display: flex; gap: 10px; align-items: center; }
-    .check { display: flex; align-items: center; gap: 8px; }
-    .check input { width: auto; }
-    h2 { font-size: 16px; margin: 28px 0 12px; color: var(--acc); letter-spacing: .3px; }
-    .card { background: #15171d; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 22px; margin-bottom: 18px; }
-    pre {
-      background: #0a0b0e; border: 1px solid rgba(255,255,255,.1; border-radius: 12px;
-      padding: 18px; overflow-x: auto; font-size: 13px; line-height: 1.7; color: #d7dbe2;
-      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; position: relative;
-    }
-    .copy-btn {
-      position: absolute; top: 12px; right: 12px;
-      background: var(--acc); color: #1a1a1a; border: none; border-radius: 8px;
-      padding: 6px 14px; font-weight: 700; cursor: pointer; font-size: 12px;
-    }
-    .note { background: rgba(201,168,76,.1); border: 1px solid rgba(201,168,76,.3); padding: 14px 16px; border-radius: 10px; font-size: 13px; color: #ddd2b3; }
-    code { background: rgba(255,255,255,.08); padding: 2px 6px; border-radius: 5px; font-size: 13px; }
-    .features { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 12px; margin-top: 16px; }
-    .feat { background: #15171d; border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 14px; font-size: 13px; }
-    .feat b { color: var(--acc); }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Test Page — Widget v2 (Light Theme + Custom Colors)</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #ffffff; /* light page background -> widget auto-detects light theme */
+    color: #222;
+  }
+  .hero {
+    padding: 80px 24px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 32px; margin-bottom: 12px; }
+  .hero p { color: #666; font-size: 16px; }
+  .note {
+    max-width: 520px;
+    margin: 40px auto;
+    background: #f7f7f8;
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    padding: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  code {
+    background: #eee;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+</style>
 </head>
 <body>
-  <header>
-    <h1>💬 Conversational AI Concierge</h1>
-    <p>Live Demo, Real-Time Personalization & Embed Snippet Generator</p>
-  </header>
 
-  <div class="wrap">
-    <div class="note">
-      🚀 <b>Growth Hacker Mode:</b> The live chatbot is deployed in the bottom corner. You can pre-configure this page via URL query parameters to instantly show a branded version to your cold outreach leads. Adjust settings below and hit <b>Apply &amp; Reload Preview</b>.
-    </div>
+<div class="hero">
+  <h1>Acme Dental Clinic</h1>
+  <p>This page has a light background — the widget should auto-detect and use a light theme, with a teal brand accent.</p>
+</div>
 
-    <h2>1 · Core Connection</h2>
-    <div class="card">
-      <div class="field">
-        <label>Webhook URL (n8n Automation Engine) <small>— Required. The bridge to your vector database and AI model.</small></label>
-        <input id="f-webhook" placeholder="https://your-n8n-instance.com/webhook/v1/chat" />
-      </div>
-    </div>
+<div class="note">
+  <strong>This demo shows:</strong>
+  <ul>
+    <li><strong>Auto theme detection</strong> — light page background → light widget</li>
+    <li><strong>Custom brand color</strong> — teal (<code>#14b8a6</code>) instead of default gold</li>
+    <li><strong>Custom position</strong> — bottom-left instead of bottom-right</li>
+    <li><strong>Custom bubble radius</strong> — slightly squarer bubbles</li>
+  </ul>
+  <p>Try the <code>data-theme="dark"</code> attribute to force dark mode regardless of page background.</p>
+</div>
 
-    <h2>2 · Instant Enterprise Branding</h2>
-    <div class="card grid">
-      <div class="field"><label>Business Name</label><input id="f-name" value="Apex Growth Solution" /></div>
-      <div class="field"><label>Avatar Initial Letter</label><input id="f-avatar" placeholder="(Auto-generated from name)" /></div>
-      <div class="field"><label>Avatar Image URL <small>(Brand Logo PNG)</small></label><input id="f-avatar-image" placeholder="https://your-client-site.com/logo.png" /></div>
-      <div class="field"><label>Header Badge Text</label><input id="f-badge" value="AI Expert" /></div>
-      <div class="field"><label>Panel Welcome Title</label><input id="f-welcome-title" value="Let's Build Your Pipeline" /></div>
-      <div class="field"><label>Panel Welcome Subtitle</label><input id="f-welcome-sub" value="Ask about our growth packages or qualification flow." /></div>
-      <div class="field" style="grid-column:1/-1"><label>Initial Autonomous Greeting Message</label><input id="f-initial" value="Hi! 👋 I'm your digital growth strategist. Looking to scale your lead generation or optimize operations today?" /></div>
-      <div class="field"><label>Agent Real-Time Status</label><input id="f-status" value="Online · Powered by AI Automation" /></div>
-      <div class="field"><label>White-Label Brand Text</label><input id="f-powered" value="AI Automation Systems" /></div>
-      <div class="field" style="grid-column:1/-1"><label>Conversion Conversion Suggestion Chips <small>— Format: "emoji:label" split by commas</small></label><input id="f-chips" value="🚀:View Services,💰:ROI Calculator,📞:Book Growth Call" /></div>
-    </div>
-
-    <h2>3 · Language Localization</h2>
-    <div class="card grid">
-      <div class="field"><label>Language Locale (BCP-47) <small>— e.g. en, ar, fr, es. Auto-formats dates, tokens & layouts.</small></label>
-        <input id="f-lang" placeholder="(Inherits from page context / browser)" /></div>
-      <div class="field"><label>Text Directionality Layout</label>
-        <select id="f-dir"><option value="auto" selected>Auto-Detect Dynamic Alignment</option><option value="ltr">LTR (Left-to-Right)</option><option value="rtl">RTL (Right-to-Left / Arabic-Hebrew)</option></select>
-      </div>
-      <div class="note" style="grid-column:1/-1">
-        💡 <b>Global Layout Optimization:</b> Setting RTL or right-to-left languages automatically flips the entire UI alignment, input text direction, and chat bubbles seamlessly for native localized experiences.
-      </div>
-    </div>
-
-    <h2>4 · UI / UX Customization</h2>
-    <div class="card grid">
-      <div class="field"><label>Visual Interface Theme</label>
-        <select id="f-theme"><option value="auto">System Sync</option><option value="light" selected>Premium Light</option><option value="dark">Immersive Dark</option></select>
-      </div>
-      <div class="field"><label>Screen Anchoring Position</label>
-        <select id="f-position"><option value="bottom-right" selected>Bottom-Right Anchor</option><option value="bottom-left">Bottom-Left Anchor</option></select>
-      </div>
-      <div class="field"><label>Brand Primary Color Accent</label><div class="row"><input type="color" id="f-color" value="#c9a84c" /><input id="f-color-text" value="#c9a84c" style="flex:1" /></div></div>
-      <div class="field"><label>Launcher Button Dimension (px)</label><input id="f-launcher-size" type="number" value="60" /></div>
-      <div class="field"><label>Chat Message Bubble Radius</label><input id="f-bubble-radius" value="18px" /></div>
-      <div class="field"><label>Main Panel Border Radius</label><input id="f-panel-radius" value="20px" /></div>
-    </div>
-
-    <h2>5 · Conversion & Engagement Mechanics</h2>
-    <div class="card grid">
-      <div class="check"><input type="checkbox" id="f-persist" checked /><label for="f-persist">Retain Session Context & History</label></div>
-      <div class="check"><input type="checkbox" id="f-sound" /><label for="f-sound">Auditory Notification Chime</label></div>
-      <div class="check"><input type="checkbox" id="f-greeting" /><label for="f-greeting">Display Proactive Engagement Teaser Bubble</label></div>
-      <div class="check"><input type="checkbox" id="f-auto-open" /><label for="f-auto-open">Trigger Auto-Open Panel on Session Load</label></div>
-      <div class="check"><input type="checkbox" id="f-show-powered" checked /><label for="f-show-powered">Display Vendor White-Label Attribution</label></div>
-      <div class="field"><label>API Request Timeout (ms)</label><input id="f-timeout" type="number" value="60000" /></div>
-    </div>
-
-    <h2>6 · Production Production Deployment Code</h2>
-    <div class="card">
-      <pre id="snippet"><button class="copy-btn" onclick="copySnippet()">Copy Embed Script</button><code id="snippet-code"></code></pre>
-      <div class="row" style="margin-top:14px">
-        <button class="copy-btn" style="position:static" onclick="applyAndReload()">Apply &amp; Reload Live Preview</button>
-        <small style="color:#7c828c">Re-initializes the DOM environment with your newly parameterized configurations instantly.</small>
-      </div>
-    </div>
-
-    <h2>Platform Infrastructure Capabilities</h2>
-    <div class="features">
-      <div class="feat"><b>Rich Text Output</b> — Native markdown execution including tabular formats, lists, and embedded URLs.</div>
-      <div class="feat"><b>Persistent State Architecture</b> — Memory matrix survives full user session reloads seamlessly.</div>
-      <div class="feat"><b>Omnidirectional Flow Sync</b> — Automatically re-routes UI structural grids upon RTL/Arabic input triggers.</div>
-      <div class="feat"><b>Dynamic Context Injection</b> — Seamless integration with webhooks to fetch calendars, lead sheets, or CRM systems.</div>
-      <div class="feat"><b>Accessible Execution Grid</b> — Complete adherence to strict WAI-ARIA UX standards and escape execution traps.</div>
-      <div class="feat"><b>Autonomous Contrast Computations</b> — Dynamic engine evaluates brand background hex inputs to ensure high text contrast readability.</div>
-    </div>
-  </div>
-
-  <!-- Dynamic Script Mount Node -->
-  <script id="cw-widget-script"></script>
-
-  <script>
-    // ── Target Configuration Matrix from Parameters ──
-    var params = new URLSearchParams(location.search);
-    var defaults = {
-      webhook: 'https://httpbin.org/post', 
-      name: 'Apex Growth Solution',
-      color: '#c9a84c',
-      theme: 'light',
-      position: 'bottom-right'
-    };
-
-    function getDataAttrs() {
-      var map = {
-        'data-webhook': 'webhook', 'data-name': 'name', 'data-avatar': 'avatar',
-        'data-avatar-image': 'avatar-image', 'data-badge': 'badge',
-        'data-welcome-title': 'welcome-title', 'data-welcome-sub': 'welcome-sub',
-        'data-initial-message': 'initial', 'data-status-text': 'status',
-        'data-powered-by': 'powered', 'data-chips': 'chips', 'data-theme': 'theme',
-        'data-lang': 'lang', 'data-dir': 'dir',
-        'data-position': 'position', 'data-color-primary': 'color',
-        'data-launcher-size': 'launcher-size', 'data-bubble-radius': 'bubble-radius',
-        'data-panel-radius': 'panel-radius', 'data-timeout': 'timeout',
-        'data-persist-chat': 'persist', 'data-sound': 'sound',
-        'data-greeting-bubble': 'greeting', 'data-auto-open': 'auto-open',
-        'data-show-powered-by': 'show-powered'
-      };
-      var out = {};
-      for (var attr in map) {
-        var v = params.get(map[attr]);
-        if (v !== null && v !== '') out[attr] = v;
-      }
-      return out;
-    }
-
-    // Initialize Widget State Injection
-    var scriptEl = document.getElementById('cw-widget-script');
-    var attrs = getDataAttrs();
-    if (!attrs['data-webhook']) attrs['data-webhook'] = defaults.webhook;
-    Object.keys(attrs).forEach(function (k) { scriptEl.setAttribute(k, attrs[k]); });
-    scriptEl.src = 'widget.js?v=' + Date.now();
-
-    // ── Sync UI Matrix To Reflect Incoming URL Parameters ──
-    function setVal(id, key, def) {
-      var el = document.getElementById(id);
-      if (!el) return;
-      var v = params.get(key);
-      if (v !== null) {
-        if (el.type === 'checkbox') el.checked = /^(true|1|yes|on)$/i.test(v);
-        else el.value = v;
-      }
-    }
-    setVal('f-webhook','webhook'); setVal('f-name','name'); setVal('f-avatar','avatar');
-    setVal('f-avatar-image','avatar-image'); setVal('f-badge','badge');
-    setVal('f-welcome-title','welcome-title'); setVal('f-welcome-sub','welcome-sub');
-    setVal('f-initial','initial'); setVal('f-status','status'); setVal('f-powered','powered');
-    setVal('f-chips','chips'); setVal('f-theme','theme'); setVal('f-position','position');
-    setVal('f-lang','lang'); setVal('f-dir','dir');
-    setVal('f-color','color'); setVal('f-color-text','color'); setVal('f-launcher-size','launcher-size');
-    setVal('f-bubble-radius','bubble-radius'); setVal('f-panel-radius','panel-radius');
-    setVal('f-timeout','timeout'); setVal('f-persist','persist'); setVal('f-sound','sound');
-    setVal('f-greeting','greeting'); setVal('f-auto-open','auto-open'); setVal('f-show-powered','show-powered');
-
-    // Real-Time Theme & Color Synchronization Listeners
-    var cp = document.getElementById('f-color'), ct = document.getElementById('f-color-text');
-    cp.addEventListener('input', function(){ ct.value = cp.value; document.documentElement.style.setProperty('--acc', cp.value); buildSnippet(); });
-    ct.addEventListener('input', function(){ cp.value = ct.value; document.documentElement.style.setProperty('--acc', ct.value); buildSnippet(); });
-    document.documentElement.style.setProperty('--acc', cp.value);
-
-    // ── Script Compilation Logic ──
-    var WIDGET_URL = 'https://1slyuum.github.io/chatbot-widget/widget.js';
-    function val(id){ var e=document.getElementById(id); return e.type==='checkbox'?e.checked:e.value.trim(); }
-    function buildSnippet() {
-      var lines = ['<script src="' + WIDGET_URL + '"'];
-      function add(attr, v, skipIf) {
-        if (v === '' || v === skipIf || v === undefined) return;
-        lines.push('  ' + attr + '="' + String(v).replace(/"/g,'&quot;') + '"');
-      }
-      add('data-webhook', val('f-webhook') || 'YOUR_N8N_WEBHOOK_URL');
-      add('data-name', val('f-name'));
-      add('data-avatar', val('f-avatar'));
-      add('data-avatar-image', val('f-avatar-image'));
-      add('data-badge', val('f-badge'), 'AI Expert');
-      add('data-welcome-title', val('f-welcome-title'));
-      add('data-welcome-sub', val('f-welcome-sub'));
-      add('data-initial-message', val('f-initial'));
-      add('data-status-text', val('f-status'), 'Online · Powered by AI Automation');
-      add('data-powered-by', val('f-powered'));
-      add('data-chips', val('f-chips'));
-      add('data-theme', val('f-theme'), 'auto');
-      add('data-lang', val('f-lang'));
-      add('data-dir', val('f-dir'), 'auto');
-      add('data-position', val('f-position'), 'bottom-right');
-      add('data-color-primary', val('f-color-text'), '#c9a84c');
-      add('data-launcher-size', val('f-launcher-size'), '60');
-      add('data-bubble-radius', val('f-bubble-radius'), '18px');
-      add('data-panel-radius', val('f-panel-radius'), '20px');
-      add('data-timeout', val('f-timeout'), '60000');
-      if (!val('f-persist')) add('data-persist-chat', 'false');
-      if (val('f-sound')) add('data-sound', 'true');
-      if (val('f-greeting')) add('data-greeting-bubble', 'true');
-      if (val('f-auto-open')) add('data-auto-open', 'true');
-      if (!val('f-show-powered')) add('data-show-powered-by', 'false');
-      lines.push('  defer><\/script>');
-      document.getElementById('snippet-code').textContent = lines.join('\n');
-    }
-
-    document.querySelectorAll('input, select').forEach(function(el){
-      el.addEventListener('input', buildSnippet);
-      el.addEventListener('change', buildSnippet);
-    });
-    buildSnippet();
-
-    function copySnippet() {
-      navigator.clipboard.writeText(document.getElementById('snippet-code').textContent)
-        .then(function(){ var b=document.querySelector('.copy-btn'); var t=b.textContent; b.textContent='Copied Script!'; setTimeout(function(){b.textContent=t;},1500); });
-    }
-
-    function applyAndReload() {
-      var p = new URLSearchParams();
-      function put(key, id, def){ var v=val(id); if(v!==''&&v!==def&&v!==false) p.set(key, v===true?'true':v); }
-      put('webhook','f-webhook'); put('name','f-name'); put('avatar','f-avatar');
-      put('avatar-image','f-avatar-image'); put('badge','f-badge','AI Expert');
-      put('welcome-title','f-welcome-title'); put('welcome-sub','f-welcome-sub');
-      put('initial','f-initial'); put('status','f-status'); put('powered','f-powered');
-      put('chips','f-chips'); put('theme','f-theme','auto'); put('position','f-position','bottom-right');
-      put('lang','f-lang'); put('dir','f-dir','auto');
-      put('color','f-color-text','#c9a84c'); put('launcher-size','f-launcher-size','60');
-      put('bubble-radius','f-bubble-radius','18px'); put('panel-radius','f-panel-radius','20px');
-      put('timeout','f-timeout','60000');
-      if(!val('f-persist')) p.set('persist','false');
-      if(val('f-sound')) p.set('sound','true');
-      if(val('f-greeting')) p.set('greeting','true');
-      if(val('f-auto-open')) p.set('auto-open','true');
-      if(!val('f-show-powered')) p.set('show-powered','false');
-      location.search = p.toString();
-    }
-  </script>
+<!-- ─── Chat Widget Embed (v2, customized) ─── -->
+<script src="widget-v2.js"
+  data-webhook="https://islyuum.app.n8n.cloud/webhook/chatbot"
+  data-name="Acme Dental"
+  data-avatar="A"
+  data-theme="auto"
+  data-color-primary="#14b8a6"
+  data-color-primary-dark="#0d9488"
+  data-position="bottom-left"
+  data-bubble-radius="12px"
+  data-welcome-title="Welcome to Acme Dental"
+  data-welcome-sub="Ask me about appointments, services, or insurance."
+  data-initial-message="Hi! I'm the Acme Dental assistant. How can I help you today? 🦷"
+  data-chips="🦷:Book appointment,💳:Insurance,📍:Location,⏰:Hours">
+</script>
+<script src="https://1slyuum.github.io/chatbot-widget/widget.js"
+  data-webhook="http://localhost:5678/webhook/7300ebb5-5e8d-4406-82f9-734bf69ffbbb/chat"
+  data-name="Aurora Studio"
+  data-avatar-image="https://sl.bing.net/jOiCHj0iyoC"
+  data-welcome-title="Welcome to Aurora Studio"
+  data-welcome-sub="Ask me anything — I'm here to help."
+  data-initial-message="Hi! 👋 I'm the Aurora assistant. How can I help today?"
+  data-powered-by="Aurora Studio"
+  data-chips="✨:What do you offer?,💰:Pricing,📞:Contact us"
+  data-theme="light"
+  data-color-primary="#a31998"
+  defer></script>
 </body>
 </html>
