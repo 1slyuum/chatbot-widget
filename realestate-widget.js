@@ -1,30 +1,22 @@
 /*!
- * RealtyChat v1.0 — Embeddable AI chatbot widget specialized for real estate websites.
+ * RealEstateWidget v2.0 — Embeddable AI chatbot widget for Real Estate websites.
  * Single-file, dependency-free. Configure via data-* attributes on the <script> tag.
  *
- * Real-estate features: property listing cards, lead capture form, book-a-viewing
- * scheduler, WhatsApp/call handoff, and an EN/AR/FR language switcher.
- *
  * Usage:
- *   <script src="https://your-cdn/widget.js"
+ *   <script src="https://your-cdn/real-estate-widget.js"
  *           data-webhook="https://your-n8n-instance/webhook/xxxx"
- *           data-name="Acme Realty"
- *           data-color-primary="#008ed0"
- *           data-whatsapp="15551234567"
- *           data-phone="+15551234567"
- *           data-langs="en,ar,fr"
- *           data-lead-capture="true"
- *           data-booking="true"
+ *           data-name="Your Real Estate Agency"
+ *           data-color-primary="#1a3a5c"
  *           defer></script>
  *
- * MIT-style license. (c) RealtyChat.
+ * MIT-style license.
  */
 (function () {
   'use strict';
 
   // Prevent double-initialisation if the script is included twice.
   if (window.__cwInitialized) {
-    console.warn('[RealtyChat] Already initialised — skipping duplicate load.');
+    console.warn('[RealEstateWidget] Already initialised — skipping duplicate load.');
     return;
   }
   window.__cwInitialized = true;
@@ -39,7 +31,7 @@
     var scripts = document.getElementsByTagName('script');
     for (var i = scripts.length - 1; i >= 0; i--) {
       var src = scripts[i].getAttribute('src') || '';
-      if (scripts[i].hasAttribute('data-webhook') || /widget(\.min)?\.js/i.test(src)) {
+      if (scripts[i].hasAttribute('data-webhook') || /real-estate-widget(\.min)?\.js/i.test(src)) {
         return scripts[i];
       }
     }
@@ -149,7 +141,7 @@
     tableBorderColor: 'rgba(0,0,0,0.1)'
   };
 
-  var primaryColor = attr('data-color-primary', '#c9a84c');
+  var primaryColor = attr('data-color-primary', '#1a3a5c');
   var primaryColorDark = attr('data-color-primary-dark', darken(primaryColor, 20));
   var primaryColorLight = lighten(primaryColor, 30);
 
@@ -167,7 +159,7 @@
   function detectRtl(text) { return !!(text && RTL_CHAR.test(text)); }
 
   var dirSetting = (attr('data-dir', 'auto') || 'auto').toLowerCase();
-  var businessNameRaw = attr('data-name', 'AI Assistant');
+  var businessNameRaw = attr('data-name', 'Your Real Estate Agency');
   var isRtl;
   if (dirSetting === 'rtl') { isRtl = true; }
   else if (dirSetting === 'ltr') { isRtl = false; }
@@ -199,114 +191,37 @@
   }
 
   // ───────────────────────────────────────────────
-  // BUILT-IN UI TRANSLATIONS (chrome strings only — bot replies stay
-  // whatever language your webhook returns; we just tell it what the
-  // visitor picked via the `language` field on every request).
-  // ───────────────────────────────────────────────
-  var I18N = {
-    en: {
-      placeholder: 'Type a message…', send: 'Send', newChat: 'New conversation', close: 'Close',
-      open: 'Open chat', poweredBy: 'Powered by', retry: 'Retry',
-      errTimeout: 'The response is taking too long. Please try again.',
-      errNetwork: 'Connection problem. Please check your internet and try again.',
-      errServer: 'The assistant is temporarily unavailable. Please try again shortly.',
-      errGeneric: 'Something went wrong. Please try again.',
-      errEmpty: "I didn't get a response. Could you try rephrasing?",
-      leadTitle: 'Get in touch', leadName: 'Full name', leadPhone: 'Phone number', leadEmail: 'Email',
-      leadSubmit: 'Send', leadSkip: 'Not now', leadThanks: "Thanks! Someone from our team will reach out shortly.",
-      leadIntro: "Happy to help — leave a few details and an agent will follow up.",
-      bookTitle: 'Book a viewing', bookProperty: 'Property (optional)', bookDate: 'Date', bookTime: 'Time',
-      bookName: 'Full name', bookPhone: 'Phone number', bookSubmit: 'Confirm booking',
-      bookThanks: "You're booked! We'll send a confirmation shortly.",
-      chipListings: '🏠 Browse Listings', chipBooking: '📅 Book a Viewing',
-      chipPricing: '💰 Get Pre-Qualified', chipAgent: '📞 Talk to an Agent',
-      call: 'Call', whatsapp: 'WhatsApp', viewListing: 'View Listing', langLabel: 'Language'
-    },
-    ar: {
-      placeholder: 'اكتب رسالة…', send: 'إرسال', newChat: 'محادثة جديدة', close: 'إغلاق',
-      open: 'فتح المحادثة', poweredBy: 'بدعم من', retry: 'إعادة المحاولة',
-      errTimeout: 'استغرق الرد وقتًا طويلاً. حاول مرة أخرى.',
-      errNetwork: 'مشكلة في الاتصال. تحقق من الإنترنت وحاول مرة أخرى.',
-      errServer: 'المساعد غير متاح مؤقتًا. حاول بعد قليل.',
-      errGeneric: 'حدث خطأ ما. حاول مرة أخرى.',
-      errEmpty: 'لم أستلم ردًا. هل يمكنك إعادة الصياغة؟',
-      leadTitle: 'تواصل معنا', leadName: 'الاسم الكامل', leadPhone: 'رقم الهاتف', leadEmail: 'البريد الإلكتروني',
-      leadSubmit: 'إرسال', leadSkip: 'ليس الآن', leadThanks: 'شكرًا! سيتواصل معك أحد أعضاء فريقنا قريبًا.',
-      leadIntro: 'يسعدنا مساعدتك — اترك بياناتك وسيتواصل معك أحد الوكلاء.',
-      bookTitle: 'حجز معاينة', bookProperty: 'العقار (اختياري)', bookDate: 'التاريخ', bookTime: 'الوقت',
-      bookName: 'الاسم الكامل', bookPhone: 'رقم الهاتف', bookSubmit: 'تأكيد الحجز',
-      bookThanks: 'تم الحجز! سنرسل لك تأكيدًا قريبًا.',
-      chipListings: '🏠 تصفح العقارات', chipBooking: '📅 حجز معاينة',
-      chipPricing: '💰 التأهيل المسبق', chipAgent: '📞 تحدث مع وكيل',
-      call: 'اتصال', whatsapp: 'واتساب', viewListing: 'عرض العقار', langLabel: 'اللغة'
-    },
-    fr: {
-      placeholder: 'Écrivez un message…', send: 'Envoyer', newChat: 'Nouvelle conversation', close: 'Fermer',
-      open: 'Ouvrir le chat', poweredBy: 'Propulsé par', retry: 'Réessayer',
-      errTimeout: "La réponse prend trop de temps. Veuillez réessayer.",
-      errNetwork: 'Problème de connexion. Vérifiez votre connexion et réessayez.',
-      errServer: "L'assistant est temporairement indisponible. Réessayez bientôt.",
-      errGeneric: "Une erreur s'est produite. Veuillez réessayer.",
-      errEmpty: "Je n'ai pas reçu de réponse. Pouvez-vous reformuler ?",
-      leadTitle: 'Contactez-nous', leadName: 'Nom complet', leadPhone: 'Téléphone', leadEmail: 'E-mail',
-      leadSubmit: 'Envoyer', leadSkip: 'Pas maintenant', leadThanks: 'Merci ! Un membre de notre équipe vous contactera bientôt.',
-      leadIntro: 'Ravi de vous aider — laissez vos coordonnées, un agent vous recontactera.',
-      bookTitle: 'Réserver une visite', bookProperty: 'Bien (optionnel)', bookDate: 'Date', bookTime: 'Heure',
-      bookName: 'Nom complet', bookPhone: 'Téléphone', bookSubmit: 'Confirmer la réservation',
-      bookThanks: 'Réservation confirmée ! Un e-mail de confirmation arrive bientôt.',
-      chipListings: '🏠 Voir les biens', chipBooking: '📅 Réserver une visite',
-      chipPricing: '💰 Pré-qualification', chipAgent: '📞 Parler à un agent',
-      call: 'Appeler', whatsapp: 'WhatsApp', viewListing: 'Voir le bien', langLabel: 'Langue'
-    }
-  };
-  function tFor(langCode, key, fallback) {
-    var d = I18N[langCode] || I18N.en;
-    return (d && d[key]) || (I18N.en[key]) || fallback || '';
-  }
-
-  // ───────────────────────────────────────────────
   // CONFIGURATION
   // ───────────────────────────────────────────────
-  var langsList = (attr('data-langs', 'en') || 'en').split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
-  var browserShort = (resolvedLang || 'en').slice(0, 2).toLowerCase();
-  var activeLang = (langSetting && langsList.indexOf(langSetting.slice(0, 2).toLowerCase()) !== -1)
-    ? langSetting.slice(0, 2).toLowerCase()
-    : (langsList.indexOf(browserShort) !== -1 ? browserShort : (langsList[0] || 'en'));
-  function t(key, fallback) { return tFor(activeLang, key, fallback); }
-  if (dirSetting === 'auto' && activeLang === 'ar') { isRtl = true; DIR = 'rtl'; }
-
   var CONFIG = {
     webhookUrl: attr('data-webhook', ''),
-    leadWebhookUrl: attr('data-lead-webhook', ''),
-    bookingWebhookUrl: attr('data-booking-webhook', ''),
     businessName: businessNameRaw,
     lang: resolvedLang,
     dir: DIR,
     isRtl: isRtl,
     avatarLetter: attr('data-avatar', avatarFrom(businessNameRaw)),
     avatarImage: attr('data-avatar-image', ''),
-    welcomeTitle: attr('data-welcome-title', 'Welcome to ' + businessNameRaw),
-    welcomeSub: attr('data-welcome-sub', "Find your next home, book a viewing, or ask me anything."),
-    initialMessage: attr('data-initial-message', "Hi! I'm the " + businessNameRaw.trim() + ' assistant. I can help you browse listings, book a viewing, or connect you with an agent. How can I help today?'),
+    welcomeTitle: attr('data-welcome-title', 'Find Your Dream Home'),
+    welcomeSub: attr('data-welcome-sub', "Ask about properties, viewings, pricing, or neighborhood info. We're here to help!"),
+    initialMessage: attr('data-initial-message', "Hello! I'm your real estate assistant. How can I help you find your perfect home today?"),
     poweredByText: attr('data-powered-by', businessNameRaw),
     poweredByUrl: attr('data-powered-by-url', ''),
     showPoweredBy: attrBool('data-show-powered-by', true),
-    statusText: attr('data-status-text', 'Online'),
-    headerBadge: attr('data-badge', 'AI'),
-    placeholder: attr('data-placeholder', t('placeholder', 'Type a message…')),
-
+    statusText: attr('data-status-text', 'Online — Available 24/7'),
+    headerBadge: attr('data-badge', 'REAL ESTATE'),
+    placeholder: attr('data-placeholder', 'Ask about properties, viewings…'),
     textToday: attr('data-text-today', ''),
-    textRetry: attr('data-text-retry', t('retry', 'Retry')),
-    textNewChat: attr('data-text-new-chat', t('newChat', 'New conversation')),
-    textClose: attr('data-text-close', t('close', 'Close')),
-    textSend: attr('data-text-send', t('send', 'Send')),
-    textOpenAria: attr('data-text-open', t('open', 'Open chat')),
-    textPoweredBy: attr('data-text-powered-by', t('poweredBy', 'Powered by')),
-    errTimeout: attr('data-err-timeout', t('errTimeout')),
-    errNetwork: attr('data-err-network', t('errNetwork')),
-    errServer: attr('data-err-server', t('errServer')),
-    errGeneric: attr('data-err-generic', t('errGeneric')),
-    errEmpty: attr('data-err-empty', t('errEmpty')),
+    textRetry: attr('data-text-retry', 'Retry'),
+    textNewChat: attr('data-text-new-chat', 'New conversation'),
+    textClose: attr('data-text-close', 'Close'),
+    textSend: attr('data-text-send', 'Send'),
+    textOpenAria: attr('data-text-open', 'Open chat'),
+    textPoweredBy: attr('data-text-powered-by', 'Powered by'),
+    errTimeout: attr('data-err-timeout', 'The response is taking too long. Please try again.'),
+    errNetwork: attr('data-err-network', 'Connection problem. Please check your internet and try again.'),
+    errServer: attr('data-err-server', 'Our assistant is temporarily unavailable. Please try again shortly.'),
+    errGeneric: attr('data-err-generic', 'Something went wrong. Please try again.'),
+    errEmpty: attr('data-err-empty', "I didn't get a response. Could you try rephrasing?"),
 
     primaryColor: primaryColor,
     primaryColorDark: primaryColorDark,
@@ -338,57 +253,29 @@
     persistOpenState: attrBool('data-persist-open', false),
     sound: attrBool('data-sound', false),
     greetingBubble: attrBool('data-greeting-bubble', false),
-    greetingBubbleText: attr('data-greeting-text', '👋 Looking for a new home? Chat with us!'),
-    maxStored: attrInt('data-max-history', 50),
-
-    // ── Real-estate feature flags ──
-    whatsapp: attr('data-whatsapp', ''),
-    phone: attr('data-phone', ''),
-    langs: langsList,
-    langLabels: (function () {
-      var raw = attr('data-lang-labels', ''); // e.g. "en:EN,ar:العربية,fr:FR"
-      var map = { en: 'EN', ar: 'العربية', fr: 'FR' };
-      if (raw) {
-        raw.split(',').forEach(function (pair) {
-          var parts = pair.split(':');
-          if (parts.length >= 2) map[parts[0].trim().toLowerCase()] = parts.slice(1).join(':').trim();
-        });
-      }
-      return map;
-    })(),
-    leadCaptureEnabled: attrBool('data-lead-capture', false),
-    leadCaptureAfter: attrInt('data-lead-capture-after', 0), // 0 = only manual/chip trigger
-    bookingEnabled: attrBool('data-booking', false),
-    listingsUrlBase: attr('data-listings-url', '') // optional base URL to prefix relative listing links
+    greetingBubbleText: attr('data-greeting-text', '🏡 Looking for your dream home? Chat with us!'),
+    maxStored: attrInt('data-max-history', 50)
   };
 
   if (!CONFIG.webhookUrl) {
-    console.error('[RealtyChat] Missing data-webhook attribute on the <script> tag. The widget cannot send messages.');
+    console.error('[RealEstateWidget] Missing data-webhook attribute on the <script> tag. The widget cannot send messages.');
   }
-  CONFIG.activeLang = activeLang;
 
   // ───────────────────────────────────────────────
-  // CHIPS
+  // CHIPS — Real Estate specific
   // ───────────────────────────────────────────────
   var chipsAttr = currentScript.getAttribute('data-chips');
   var DEFAULT_CHIPS = [
-    { emoji: '', label: t('chipListings', '🏠 Browse Listings'), action: '__listings__' },
-    { emoji: '', label: t('chipBooking', '📅 Book a Viewing'), action: '__booking_form__' },
-    { emoji: '', label: t('chipPricing', '💰 Get Pre-Qualified') },
-    { emoji: '', label: t('chipAgent', '📞 Talk to an Agent'), action: '__lead_form__' }
+    { emoji: '🏠', label: 'Browse Properties' },
+    { emoji: '💰', label: 'Mortgage & Pricing' },
+    { emoji: '📅', label: 'Schedule Viewing' }
   ];
   var CHIPS = DEFAULT_CHIPS;
   if (chipsAttr !== null) {
-    // Format: "emoji:label" or "emoji:label:__action__" where action is one of
-    // __lead_form__ / __booking_form__ / __listings__ (or omitted for a plain message chip).
     CHIPS = (chipsAttr || '').split(',').map(function (pair) {
       var parts = pair.split(':');
-      var action = '';
-      if (parts.length >= 3 && /^__.*__$/.test(parts[parts.length - 1].trim())) {
-        action = parts.pop().trim();
-      }
-      if (parts.length === 1) return { emoji: '', label: parts[0].trim(), action: action };
-      return { emoji: (parts[0] || '').trim(), label: (parts.slice(1).join(':') || '').trim(), action: action };
+      if (parts.length === 1) return { emoji: '', label: parts[0].trim() };
+      return { emoji: (parts[0] || '').trim(), label: (parts.slice(1).join(':') || '').trim() };
     }).filter(function (c) { return c.label; });
   }
 
@@ -431,7 +318,11 @@
   // ───────────────────────────────────────────────
   // POSITION HELPERS
   // ───────────────────────────────────────────────
-  var SIDE = CONFIG.position === 'bottom-left' ? 'left' : 'right';
+  var SIDE = (function () {
+    var p = (CONFIG.position || 'bottom-right').toLowerCase();
+    if (p === 'bottom-left' || p === 'top-left') return 'left';
+    return 'right';
+  })();
   var OTHER_SIDE = SIDE === 'left' ? 'right' : 'left';
   var LSIZE = CONFIG.launcherSize;
 
@@ -476,13 +367,12 @@
     text = text.replace(/((?:\|[^\n]+\|\n?)+)/g, function (block) {
       var rows = block.trim().split('\n').filter(function (r) { return r.trim(); });
       if (rows.length < 2) return block;
-      // Check if second row is separator
       var sepRow = rows[1];
       if (!/^\|[\s\-:|]+\|/.test(sepRow)) return block;
       var html = '<div class="cw-table-wrap"><table class="cw-table">';
       var isHead = true;
       for (var ri = 0; ri < rows.length; ri++) {
-        if (ri === 1) { isHead = false; continue; } // skip separator
+        if (ri === 1) { isHead = false; continue; }
         var cells = rows[ri].split('|').filter(function (_, idx, arr) { return idx > 0 && idx < arr.length; });
         var tag = (ri === 0) ? 'th' : 'td';
         html += '<tr>';
@@ -518,12 +408,6 @@
     // 9. Strikethrough
     text = text.replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
 
-    // 9b. Images ![alt](url) — must run before link parsing (shares the syntax)
-    text = text.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g,
-      function (_, alt, url) {
-        return '<img class="cw-md-img" src="' + escapeHtml(url) + '" alt="' + escapeHtml(alt) + '" loading="lazy"/>';
-      });
-
     // 10. Links [text](url) — only http/https/mailto
     text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g,
       function (_, label, url) {
@@ -532,14 +416,13 @@
 
     // 11. Auto-link bare URLs — avoid double-linking
     text = text.replace(/(^|[\s(])(https?:\/\/[^\s<"')\]]+)/g, function (_, pre, url) {
-      // Don't re-wrap if already in an href
       return pre + '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + url + '</a>';
     });
 
     // 12. Lists (nested bullet / numbered)
     var lines = text.split('\n');
     var out = [];
-    var listStack = []; // {type, indent}
+    var listStack = [];
 
     function openList(type, indent) {
       listStack.push({ type: type, indent: indent });
@@ -633,8 +516,7 @@
   // ───────────────────────────────────────────────
   var chipsHtml = CHIPS.map(function (c) {
     var label = (c.emoji ? c.emoji + '\u2009' : '') + c.label;
-    var actionAttr = c.action ? ' data-action="' + escapeHtml(c.action) + '"' : '';
-    return '<button type="button" class="cw-chip" role="option" tabindex="0" data-chip="' + escapeHtml(c.label) + '"' + actionAttr + '>' + escapeHtml(label) + '</button>';
+    return '<button type="button" class="cw-chip" role="option" tabindex="0" data-chip="' + escapeHtml(c.label) + '">' + escapeHtml(label) + '</button>';
   }).join('');
 
   // ───────────────────────────────────────────────
@@ -886,28 +768,6 @@
   '.cw-icon-btn:hover{background:var(--cw-accent-dim);color:var(--cw-accent);}\n' +
   '.cw-icon-btn:active{transform:scale(0.94);}\n' +
   '.cw-icon-btn:focus-visible{outline:2px solid ' + CONFIG.primaryColor + '66;outline-offset:1px;}\n' +
-  'a.cw-icon-btn{text-decoration:none;}\n' +
-
-  /* ── Language switcher ── */
-  '.cw-lang-wrap{position:relative;}\n' +
-  '.cw-lang-menu{\n' +
-  '  position:absolute;top:calc(100% + 6px);' + OTHER_SIDE + ':0;\n' +
-  '  background:var(--cw-bg);border:1px solid var(--cw-border);\n' +
-  '  border-radius:12px;box-shadow:var(--cw-shadow);\n' +
-  '  padding:5px;min-width:120px;\n' +
-  '  display:none;flex-direction:column;gap:2px;\n' +
-  '  z-index:2147483001;\n' +
-  '}\n' +
-  '.cw-lang-menu.show{display:flex;}\n' +
-  '.cw-lang-item{\n' +
-  '  background:transparent;border:none;cursor:pointer;\n' +
-  '  text-align:' + (isRtl ? 'right' : 'left') + ';\n' +
-  '  padding:8px 10px;border-radius:8px;\n' +
-  '  font-size:13px;color:var(--cw-text);font-family:var(--cw-font);\n' +
-  '  transition:background 0.15s ease;\n' +
-  '}\n' +
-  '.cw-lang-item:hover{background:var(--cw-accent-dim);color:var(--cw-accent);}\n' +
-  '.cw-lang-item.active{color:var(--cw-accent);font-weight:650;}\n' +
   '.cw-header-badge{\n' +
   '  font-size:10px;color:var(--cw-accent);\n' +
   '  letter-spacing:1.2px;text-transform:uppercase;\n' +
@@ -990,37 +850,11 @@
   '.cw-chip:focus-visible{outline:2px solid ' + CONFIG.primaryColor + '66;outline-offset:2px;}\n' +
 
   /* ── Message rows ── */
-  /*
-   * ROOT CAUSE FIX for user message splitting:
-   * The .cw-msg-row used flex with align-items:flex-end and the inner wrap
-   * div had `maxWidth: 100%` set via inline style but no explicit min-width:0
-   * on either the row or the wrap. In flex containers, flex items don't shrink
-   * below their content size by default (min-width:auto). This caused the
-   * bubble's max-width:80% to be computed against the FLEX ITEM's intrinsic
-   * size rather than the container — leading to the row having incorrect
-   * available width. Additionally, the bubble itself had `unicode-bidi:plaintext`
-   * which causes browsers to perform BIDI resolution on a word-by-word basis,
-   * sometimes forcing line breaks at unexpected positions in short phrases.
-   *
-   * Fixes applied:
-   * 1. min-width:0 on .cw-msg-row (prevents flex item overflow)
-   * 2. min-width:0 on .cw-msg-wrap (same reason)
-   * 3. Changed user bubble from `white-space:pre-wrap` (set via JS) to
-   *    `white-space:pre-line` with explicit width:fit-content + max-width:80%
-   *    on the bubble itself, so the bubble can be as narrow as its content
-   *    but always wraps at the correct column.
-   * 4. Changed unicode-bidi from plaintext (causes word-level breaks) to
-   *    `isolate` which isolates the paragraph's directionality without
-   *    causing intra-word splitting.
-   * 5. overflow-wrap:break-word on bubble to handle long URLs gracefully.
-   * 6. word-break:break-word (not break-all — that's too aggressive) as
-   *    a fallback for very long unbreakable tokens.
-   */
   '.cw-msg-row{\n' +
   '  display:flex;\n' +
   '  align-items:flex-end;\n' +
   '  gap:8px;\n' +
-  '  min-width:0;\n' +         /* KEY FIX 1: prevent flex overflow */
+  '  min-width:0;\n' +
   '  width:100%;\n' +
   '  animation:cw-fadeUp 0.28s ease both;\n' +
   '  margin-bottom:2px;\n' +
@@ -1031,7 +865,7 @@
   '@keyframes cw-fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}\n' +
 
   '.cw-msg-avatar{\n' +
-  '  width:28px;height:28px;min-width:28px;\n' + /* min-width prevents squashing */
+  '  width:28px;height:28px;min-width:28px;\n' +
   '  border-radius:50%;\n' +
   '  background:var(--cw-grad);\n' +
   '  display:flex;align-items:center;justify-content:center;\n' +
@@ -1052,8 +886,8 @@
   '.cw-msg-wrap{\n' +
   '  display:flex;\n' +
   '  flex-direction:column;\n' +
-  '  min-width:0;\n' +          /* KEY FIX 2: allow flex children to shrink */
-  '  max-width:calc(100% - 44px);\n' + /* 28px avatar + 8px gap + 8px safety */
+  '  min-width:0;\n' +
+  '  max-width:calc(100% - 44px);\n' +
   '  width:auto;\n' +
   '}\n' +
   '.cw-msg-row.user .cw-msg-wrap{align-items:flex-end;}\n' +
@@ -1061,16 +895,14 @@
 
   /* ── Bubbles ── */
   '.cw-bubble{\n' +
-  '  max-width:100%;\n' +       /* Constrained by .cw-msg-wrap */
+  '  max-width:100%;\n' +
   '  padding:10px 14px;\n' +
   '  border-radius:var(--cw-bubble-r);\n' +
   '  font-size:13.5px;\n' +
   '  line-height:1.65;\n' +
   '  position:relative;\n' +
-  /* KEY FIX 3: overflow-wrap for URLs; word-break:break-word (not break-all) */
   '  overflow-wrap:break-word;\n' +
   '  word-break:break-word;\n' +
-  /* KEY FIX 4: unicode-bidi:isolate instead of plaintext — prevents word-level BIDI splits */
   '  unicode-bidi:isolate;\n' +
   '}\n' +
 
@@ -1082,10 +914,6 @@
   '  width:auto;\n' +
   '}\n' +
 
-  /* KEY FIX 5: User bubble uses width:fit-content so bubble is only as wide
-   * as its text — no forced stretching. max-width is capped by the wrapper.
-   * white-space is NOT set to pre-wrap on the bubble element itself (only
-   * via the JS textContent approach which respects natural line-breaking). */
   '.cw-bubble.user{\n' +
   '  background:var(--cw-grad);\n' +
   '  color:var(--cw-user-text);\n' +
@@ -1093,7 +921,7 @@
   '  border-bottom-right-radius:4px;\n' +
   '  width:-webkit-fit-content;\n' +
   '  width:fit-content;\n' +
-  '  white-space:pre-wrap;\n' +  /* Allows intentional newlines without forcing wraps */
+  '  white-space:pre-wrap;\n' +
   '  word-spacing:normal;\n' +
   '  letter-spacing:normal;\n' +
   '}\n' +
@@ -1108,7 +936,7 @@
   '  text-decoration:underline;\n' +
   '  text-decoration-thickness:1px;\n' +
   '  text-underline-offset:3px;\n' +
-  '  word-break:break-all;\n' + /* URLs specifically get break-all */
+  '  word-break:break-all;\n' +
   '}\n' +
   '.cw-bubble.ai a:hover{opacity:0.8;}\n' +
   '.cw-bubble.ai code{\n' +
@@ -1169,61 +997,6 @@
   '  font-style:italic;\n' +
   '}\n' +
   '.cw-hr{border:none;border-top:1px solid var(--cw-border);margin:10px 0;}\n' +
-  '.cw-md-img{max-width:100%;border-radius:10px;display:block;margin:8px 0;}\n' +
-
-  /* ── Property listing cards ── */
-  '.cw-listings{display:flex;flex-direction:column;gap:10px;margin:6px 0;width:100%;}\n' +
-  '.cw-listing-card{\n' +
-  '  border:1px solid var(--cw-border);border-radius:14px;overflow:hidden;\n' +
-  '  background:var(--cw-panel);width:100%;\n' +
-  '}\n' +
-  '.cw-listing-img{width:100%;height:130px;object-fit:cover;display:block;background:var(--cw-border);}\n' +
-  '.cw-listing-body{padding:10px 12px;}\n' +
-  '.cw-listing-price{font-size:14.5px;font-weight:750;color:var(--cw-accent);}\n' +
-  '.cw-listing-title{font-size:13px;font-weight:600;color:var(--cw-text);margin-top:2px;}\n' +
-  '.cw-listing-meta{font-size:11.5px;color:var(--cw-muted);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;}\n' +
-  '.cw-listing-loc{font-size:11.5px;color:var(--cw-muted);margin-top:2px;}\n' +
-  '.cw-listing-btn{\n' +
-  '  display:inline-block;margin-top:9px;padding:7px 14px;\n' +
-  '  border-radius:20px;background:var(--cw-grad);color:' + CONFIG.userTextColor + ';\n' +
-  '  font-size:12px;font-weight:650;text-decoration:none;\n' +
-  '}\n' +
-  '.cw-listing-btn:hover{opacity:0.9;}\n' +
-
-  /* ── Inline forms (lead capture / booking) ── */
-  '.cw-form-card{\n' +
-  '  border:1px solid var(--cw-border);border-radius:14px;\n' +
-  '  background:var(--cw-panel);padding:14px;width:100%;\n' +
-  '}\n' +
-  '.cw-form-title{font-size:13.5px;font-weight:700;color:var(--cw-text);margin-bottom:3px;}\n' +
-  '.cw-form-sub{font-size:12px;color:var(--cw-muted);margin-bottom:10px;line-height:1.5;}\n' +
-  '.cw-form-field{margin-bottom:8px;}\n' +
-  '.cw-form-field label{display:block;font-size:11px;color:var(--cw-muted);margin-bottom:4px;font-weight:600;}\n' +
-  '.cw-form-field input,.cw-form-field select{\n' +
-  '  width:100%;padding:9px 11px;border-radius:9px;\n' +
-  '  border:1.5px solid var(--cw-border);background:var(--cw-input-bg);\n' +
-  '  color:var(--cw-text);font-size:13px;font-family:var(--cw-font);\n' +
-  '  outline:none;transition:border-color 0.2s ease;\n' +
-  '}\n' +
-  '.cw-form-field input:focus,.cw-form-field select:focus{border-color:' + CONFIG.primaryColor + ';}\n' +
-  '.cw-form-row{display:flex;gap:8px;}\n' +
-  '.cw-form-row .cw-form-field{flex:1;min-width:0;}\n' +
-  '.cw-form-actions{display:flex;gap:8px;margin-top:10px;}\n' +
-  '.cw-form-submit{\n' +
-  '  flex:1;padding:9px 12px;border:none;border-radius:9px;\n' +
-  '  background:var(--cw-grad);color:' + CONFIG.userTextColor + ';\n' +
-  '  font-size:12.5px;font-weight:650;cursor:pointer;font-family:var(--cw-font);\n' +
-  '}\n' +
-  '.cw-form-submit:hover{opacity:0.92;}\n' +
-  '.cw-form-submit:disabled{opacity:0.6;cursor:default;}\n' +
-  '.cw-form-skip{\n' +
-  '  padding:9px 12px;border:1.5px solid var(--cw-border);border-radius:9px;\n' +
-  '  background:transparent;color:var(--cw-muted);font-size:12.5px;\n' +
-  '  cursor:pointer;font-family:var(--cw-font);\n' +
-  '}\n' +
-  '.cw-form-skip:hover{background:var(--cw-accent-dim);}\n' +
-  '.cw-form-error{font-size:11px;color:#ef4444;margin-top:6px;display:none;}\n' +
-  '.cw-form-error.show{display:block;}\n' +
 
   /* ── Timestamp ── */
   '.cw-bubble-time{\n' +
@@ -1293,7 +1066,7 @@
   '}\n' +
   '.cw-textarea{\n' +
   '  flex:1;\n' +
-  '  min-width:0;\n' +          /* KEY FIX 6: textarea must not overflow its flex container */
+  '  min-width:0;\n' +
   '  background:transparent;\n' +
   '  border:none;outline:none;\n' +
   '  font-family:var(--cw-font);\n' +
@@ -1410,33 +1183,6 @@
   '      </div>' +
   '    </div>' +
   '    <div class="cw-header-actions">' +
-  (CONFIG.langs.length > 1
-    ? '<div class="cw-lang-wrap">' +
-      '  <button class="cw-icon-btn" id="cw-lang-btn" title="' + escapeHtml(t('langLabel','Language')) + '" aria-label="' + escapeHtml(t('langLabel','Language')) + '" aria-haspopup="true" aria-expanded="false">' +
-      '    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">' +
-      '      <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>' +
-      '      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>' +
-      '    </svg>' +
-      '  </button>' +
-      '  <div class="cw-lang-menu" id="cw-lang-menu" role="menu">' +
-      CONFIG.langs.map(function (code) {
-        return '<button type="button" class="cw-lang-item" role="menuitem" data-lang-code="' + escapeHtml(code) + '">' + escapeHtml(CONFIG.langLabels[code] || code.toUpperCase()) + '</button>';
-      }).join('') +
-      '  </div>' +
-      '</div>'
-    : '') +
-  (CONFIG.whatsapp
-    ? '<a class="cw-icon-btn" id="cw-whatsapp-btn" href="https://wa.me/' + escapeHtml(CONFIG.whatsapp.replace(/[^0-9]/g, '')) + '" target="_blank" rel="noopener" title="' + escapeHtml(t('whatsapp','WhatsApp')) + '" aria-label="' + escapeHtml(t('whatsapp','WhatsApp')) + '">' +
-      '  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2zm5.8 14.1c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.1.11-1.78-.11-.41-.13-.94-.3-1.62-.6-2.84-1.23-4.7-4.1-4.84-4.29-.14-.19-1.16-1.54-1.16-2.94 0-1.4.73-2.08.99-2.37.26-.28.57-.35.76-.35h.55c.18 0 .42-.07.65.5.24.58.82 2 .89 2.15.07.15.12.32.02.51-.09.19-.14.31-.28.48-.14.16-.29.36-.42.49-.14.13-.28.28-.12.55.16.28.71 1.17 1.53 1.9 1.05.94 1.94 1.23 2.21 1.37.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.18-.28.37-.23.62-.14.26.09 1.63.77 1.9.91.28.14.46.21.53.33.07.12.07.68-.17 1.36z"/></svg>' +
-      '</a>'
-    : '') +
-  (CONFIG.phone
-    ? '<a class="cw-icon-btn" id="cw-call-btn" href="tel:' + escapeHtml(CONFIG.phone) + '" title="' + escapeHtml(t('call','Call')) + '" aria-label="' + escapeHtml(t('call','Call')) + '">' +
-      '  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">' +
-      '    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.34 1.79.65 2.65a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.43-1.27a2 2 0 0 1 2.11-.45c.86.31 1.75.53 2.65.65A2 2 0 0 1 22 16.92z"/>' +
-      '  </svg>' +
-      '</a>'
-    : '') +
   '      <button class="cw-icon-btn" id="cw-clear-btn"' +
   '        title="' + escapeHtml(CONFIG.textNewChat) + '"' +
   '        aria-label="' + escapeHtml(CONFIG.textNewChat) + '">' +
@@ -1549,7 +1295,7 @@
     var _tries = 0;
     var _t = setInterval(function () {
       if (document.body) { clearInterval(_t); boot(); }
-      else if (++_tries > 50) { clearInterval(_t); console.error('[ChatWidget] document.body never became available.'); }
+      else if (++_tries > 50) { clearInterval(_t); console.error('[RealEstateWidget] document.body never became available.'); }
     }, 50);
   }
 
@@ -1574,11 +1320,6 @@
     var badge       = root.querySelector('#cw-badge');
     var greeting    = root.querySelector('#cw-greeting');
     var greetClose  = root.querySelector('#cw-greeting-close');
-    var langBtn     = root.querySelector('#cw-lang-btn');
-    var langMenu    = root.querySelector('#cw-lang-menu');
-
-    var userMsgCount = 0;
-    var leadFormShown = (storeGet(NS + 'lead_captured') === '1');
 
     var isMobile = function () { return window.matchMedia('(max-width:560px)').matches; };
 
@@ -1707,15 +1448,11 @@
       // Bubble
       var bubble = document.createElement('div');
       bubble.className = 'cw-bubble ' + role;
-      bubble.setAttribute('dir', 'auto'); // per-message BIDI without word-level splitting
+      bubble.setAttribute('dir', 'auto');
 
       if (role === 'ai') {
         bubble.innerHTML = renderMarkdown(text);
       } else {
-        // KEY FIX: Use textContent (not innerHTML, not innerText) to set user
-        // text safely. This avoids XSS and keeps the natural text flow.
-        // white-space:pre-wrap (in CSS) handles intentional newlines.
-        // No inline style override needed — the CSS class handles it.
         bubble.textContent = text;
       }
 
@@ -1821,7 +1558,6 @@
 
     // ── Auto-resize textarea ──
     function autoResize() {
-      // Read then write — minimise layout thrash
       input.style.height = 'auto';
       var h = input.scrollHeight;
       if (h > 0) input.style.height = Math.min(h, 120) + 'px';
@@ -1866,241 +1602,6 @@
       }
     }
 
-    // ───────────────────────────────────────────────
-    // LANGUAGE SWITCHER
-    // ───────────────────────────────────────────────
-    function closeLangMenu() {
-      if (langMenu) langMenu.classList.remove('show');
-      if (langBtn) langBtn.setAttribute('aria-expanded', 'false');
-    }
-    function switchLanguage(code) {
-      if (!code || CONFIG.langs.indexOf(code) === -1) return;
-      activeLang = code; // update closure var so t() picks up the new language
-      CONFIG.activeLang = code;
-      var rtlNow = RTL_LANGS.test(code) || code === 'ar';
-      CONFIG.dir = rtlNow ? 'rtl' : 'ltr';
-      widget.setAttribute('dir', CONFIG.dir);
-      widget.setAttribute('lang', code);
-
-      // Refresh chrome strings in place (bot reply language is controlled
-      // server-side via the `language` field sent with each request).
-      CONFIG.placeholder = t('placeholder');
-      CONFIG.textRetry = t('retry');
-      CONFIG.textNewChat = t('newChat');
-      CONFIG.textClose = t('close');
-      CONFIG.textSend = t('send');
-      CONFIG.textOpenAria = t('open');
-      CONFIG.textPoweredBy = t('poweredBy');
-      CONFIG.errTimeout = t('errTimeout');
-      CONFIG.errNetwork = t('errNetwork');
-      CONFIG.errServer = t('errServer');
-      CONFIG.errGeneric = t('errGeneric');
-      CONFIG.errEmpty = t('errEmpty');
-
-      input.placeholder = CONFIG.placeholder;
-      input.setAttribute('aria-label', CONFIG.placeholder);
-      sendBtn.title = CONFIG.textSend;
-      sendBtn.setAttribute('aria-label', CONFIG.textSend);
-      clearBtn.title = CONFIG.textNewChat;
-      clearBtn.setAttribute('aria-label', CONFIG.textNewChat);
-      closeBtn.title = CONFIG.textClose;
-      closeBtn.setAttribute('aria-label', CONFIG.textClose);
-
-      root.querySelectorAll('.cw-lang-item').forEach(function (btn) {
-        btn.classList.toggle('active', btn.getAttribute('data-lang-code') === code);
-      });
-      closeLangMenu();
-      storeSet(NS + 'lang', code);
-    }
-    if (langBtn && langMenu) {
-      langBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var show = !langMenu.classList.contains('show');
-        langMenu.classList.toggle('show', show);
-        langBtn.setAttribute('aria-expanded', String(show));
-      });
-      langMenu.addEventListener('click', function (e) {
-        var item = e.target.closest('.cw-lang-item');
-        if (!item) return;
-        switchLanguage(item.getAttribute('data-lang-code'));
-      });
-      document.addEventListener('click', function (e) {
-        if (!langMenu.contains(e.target) && e.target !== langBtn) closeLangMenu();
-      });
-      var savedLang = storeGet(NS + 'lang');
-      if (savedLang && CONFIG.langs.indexOf(savedLang) !== -1 && savedLang !== CONFIG.activeLang) {
-        switchLanguage(savedLang);
-      } else {
-        root.querySelectorAll('.cw-lang-item').forEach(function (btn) {
-          btn.classList.toggle('active', btn.getAttribute('data-lang-code') === CONFIG.activeLang);
-        });
-      }
-    }
-
-    // ───────────────────────────────────────────────
-    // GENERIC INLINE-FORM MESSAGE ROW
-    // Renders a custom AI row (avatar + card) instead of a text bubble.
-    // ───────────────────────────────────────────────
-    function appendCustomRow(buildFn) {
-      var row = document.createElement('div');
-      row.className = 'cw-msg-row ai';
-      var av = document.createElement('div');
-      av.className = 'cw-msg-avatar';
-      av.setAttribute('aria-hidden', 'true');
-      av.innerHTML = msgAvatarInner();
-      var wrap = document.createElement('div');
-      wrap.className = 'cw-msg-wrap';
-      wrap.style.width = '100%';
-      buildFn(wrap);
-      row.appendChild(av);
-      row.appendChild(wrap);
-      messages.appendChild(row);
-      scrollToBottom();
-      return row;
-    }
-
-    // ───────────────────────────────────────────────
-    // PROPERTY LISTING CARDS
-    // ───────────────────────────────────────────────
-    function resolveListingUrl(url) {
-      if (!url) return '';
-      if (/^https?:\/\//i.test(url)) return url;
-      if (CONFIG.listingsUrlBase) return CONFIG.listingsUrlBase.replace(/\/$/, '') + '/' + url.replace(/^\//, '');
-      return url;
-    }
-    function renderListingCards(listings) {
-      if (!Array.isArray(listings) || !listings.length) return;
-      appendCustomRow(function (wrap) {
-        var box = document.createElement('div');
-        box.className = 'cw-listings';
-        listings.slice(0, 8).forEach(function (item) {
-          var card = document.createElement('div');
-          card.className = 'cw-listing-card';
-          var img = item.image || item.photo || item.imageUrl || '';
-          var price = item.price || item.priceLabel || '';
-          var title = item.title || item.name || item.address || '';
-          var beds = item.beds != null ? item.beds : item.bedrooms;
-          var baths = item.baths != null ? item.baths : item.bathrooms;
-          var area = item.area || item.sqft || item.size;
-          var loc = item.location || item.city || item.address || '';
-          var url = resolveListingUrl(item.url || item.link || '');
-
-          var metaBits = [];
-          if (beds != null) metaBits.push('🛏 ' + beds);
-          if (baths != null) metaBits.push('🛁 ' + baths);
-          if (area) metaBits.push('📐 ' + area);
-
-          card.innerHTML =
-            (img ? '<img class="cw-listing-img" src="' + escapeHtml(img) + '" alt="' + escapeHtml(title) + '" loading="lazy"/>' : '') +
-            '<div class="cw-listing-body">' +
-            (price ? '<div class="cw-listing-price">' + escapeHtml(String(price)) + '</div>' : '') +
-            (title ? '<div class="cw-listing-title">' + escapeHtml(title) + '</div>' : '') +
-            (metaBits.length ? '<div class="cw-listing-meta">' + metaBits.map(escapeHtml).join('<span></span>') + '</div>' : '') +
-            (loc && loc !== title ? '<div class="cw-listing-loc">📍 ' + escapeHtml(loc) + '</div>' : '') +
-            (url ? '<a class="cw-listing-btn" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(t('viewListing', 'View Listing')) + '</a>' : '') +
-            '</div>';
-          box.appendChild(card);
-        });
-        wrap.appendChild(box);
-      });
-    }
-
-    // ───────────────────────────────────────────────
-    // LEAD CAPTURE FORM
-    // ───────────────────────────────────────────────
-    function showLeadForm() {
-      if (leadFormShown) return;
-      appendCustomRow(function (wrap) {
-        var card = document.createElement('div');
-        card.className = 'cw-form-card';
-        card.innerHTML =
-          '<div class="cw-form-title">' + escapeHtml(t('leadTitle', 'Get in touch')) + '</div>' +
-          '<div class="cw-form-sub">' + escapeHtml(t('leadIntro')) + '</div>' +
-          '<div class="cw-form-field"><label>' + escapeHtml(t('leadName', 'Full name')) + '</label><input type="text" id="cw-lead-name" autocomplete="name"/></div>' +
-          '<div class="cw-form-field"><label>' + escapeHtml(t('leadPhone', 'Phone number')) + '</label><input type="tel" id="cw-lead-phone" autocomplete="tel"/></div>' +
-          '<div class="cw-form-field"><label>' + escapeHtml(t('leadEmail', 'Email')) + '</label><input type="email" id="cw-lead-email" autocomplete="email"/></div>' +
-          '<div class="cw-form-error" id="cw-lead-error">Please add your name and a phone or email.</div>' +
-          '<div class="cw-form-actions">' +
-          '  <button type="button" class="cw-form-skip" id="cw-lead-skip">' + escapeHtml(t('leadSkip', 'Not now')) + '</button>' +
-          '  <button type="button" class="cw-form-submit" id="cw-lead-submit">' + escapeHtml(t('leadSubmit', 'Send')) + '</button>' +
-          '</div>';
-        wrap.appendChild(card);
-
-        card.querySelector('#cw-lead-skip').addEventListener('click', function () { card.remove(); });
-        card.querySelector('#cw-lead-submit').addEventListener('click', function () {
-          var name = card.querySelector('#cw-lead-name').value.trim();
-          var phone = card.querySelector('#cw-lead-phone').value.trim();
-          var email = card.querySelector('#cw-lead-email').value.trim();
-          var errEl = card.querySelector('#cw-lead-error');
-          if (!name || (!phone && !email)) { errEl.classList.add('show'); return; }
-          errEl.classList.remove('show');
-          var btn = card.querySelector('#cw-lead-submit');
-          btn.disabled = true;
-          fetch(CONFIG.leadWebhookUrl || CONFIG.webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'lead', name: name, phone: phone, email: email,
-              sessionId: SESSION_ID, page: location.href, language: CONFIG.activeLang
-            })
-          }).catch(function () {}).finally(function () {
-            card.innerHTML = '<div class="cw-form-title">✅ ' + escapeHtml(t('leadThanks')) + '</div>';
-            leadFormShown = true;
-            storeSet(NS + 'lead_captured', '1');
-          });
-        });
-      });
-    }
-
-    // ───────────────────────────────────────────────
-    // BOOK-A-VIEWING FORM
-    // ───────────────────────────────────────────────
-    function showBookingForm(prefillProperty) {
-      appendCustomRow(function (wrap) {
-        var card = document.createElement('div');
-        card.className = 'cw-form-card';
-        var todayIso = new Date().toISOString().slice(0, 10);
-        card.innerHTML =
-          '<div class="cw-form-title">' + escapeHtml(t('bookTitle', 'Book a viewing')) + '</div>' +
-          '<div class="cw-form-field"><label>' + escapeHtml(t('bookProperty', 'Property (optional)')) + '</label><input type="text" id="cw-book-property" value="' + escapeHtml(prefillProperty || '') + '"/></div>' +
-          '<div class="cw-form-row">' +
-          '  <div class="cw-form-field"><label>' + escapeHtml(t('bookDate', 'Date')) + '</label><input type="date" id="cw-book-date" min="' + todayIso + '"/></div>' +
-          '  <div class="cw-form-field"><label>' + escapeHtml(t('bookTime', 'Time')) + '</label><input type="time" id="cw-book-time" value="10:00"/></div>' +
-          '</div>' +
-          '<div class="cw-form-field"><label>' + escapeHtml(t('bookName', 'Full name')) + '</label><input type="text" id="cw-book-name" autocomplete="name"/></div>' +
-          '<div class="cw-form-field"><label>' + escapeHtml(t('bookPhone', 'Phone number')) + '</label><input type="tel" id="cw-book-phone" autocomplete="tel"/></div>' +
-          '<div class="cw-form-error" id="cw-book-error">Please add your name, phone, and a preferred date.</div>' +
-          '<div class="cw-form-actions">' +
-          '  <button type="button" class="cw-form-submit" id="cw-book-submit">' + escapeHtml(t('bookSubmit', 'Confirm booking')) + '</button>' +
-          '</div>';
-        wrap.appendChild(card);
-
-        card.querySelector('#cw-book-submit').addEventListener('click', function () {
-          var property = card.querySelector('#cw-book-property').value.trim();
-          var date = card.querySelector('#cw-book-date').value;
-          var time = card.querySelector('#cw-book-time').value;
-          var name = card.querySelector('#cw-book-name').value.trim();
-          var phone = card.querySelector('#cw-book-phone').value.trim();
-          var errEl = card.querySelector('#cw-book-error');
-          if (!name || !phone || !date) { errEl.classList.add('show'); return; }
-          errEl.classList.remove('show');
-          var btn = card.querySelector('#cw-book-submit');
-          btn.disabled = true;
-          fetch(CONFIG.bookingWebhookUrl || CONFIG.webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'booking', property: property, date: date, time: time,
-              name: name, phone: phone, sessionId: SESSION_ID, page: location.href,
-              language: CONFIG.activeLang
-            })
-          }).catch(function () {}).finally(function () {
-            card.innerHTML = '<div class="cw-form-title">✅ ' + escapeHtml(t('bookThanks')) + '</div>';
-          });
-        });
-      });
-    }
-
     // ── Open / close ──
     function setOpen(open) {
       isOpen = open;
@@ -2127,8 +1628,6 @@
       } else {
         lockBodyScroll(false);
         try { input.blur(); } catch (e) {}
-        // Return focus to launcher (accessibility)
-        try { launcher.focus(); } catch (e) {}
       }
 
       if (CONFIG.persistOpenState) storeSet(NS + 'open', isOpen ? '1' : '0');
@@ -2149,14 +1648,12 @@
       sendBtn.disabled = true;
       sendBtn.setAttribute('aria-busy', 'true');
       input.value = '';
-      // Reset textarea height synchronously before any async work
       input.style.height = 'auto';
       input.style.height = '22px';
       hideChips();
 
       appendMessage(text, 'user');
       showTyping();
-      userMsgCount++;
 
       var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
       var timedOut = false;
@@ -2172,8 +1669,7 @@
           chatInput: text,
           message: text,
           sessionId: SESSION_ID,
-          page: location.href,
-          language: CONFIG.activeLang
+          page: location.href
         })
       };
       if (controller) fetchOpts.signal = controller.signal;
@@ -2190,20 +1686,10 @@
           return res.text();
         })
         .then(function (rawText) {
-          var listings = extractListings(rawText);
-          if (listings) {
-            renderListingCards(listings);
-          } else {
-            var reply = extractReply(rawText);
-            appendMessage(reply && String(reply).trim() ? String(reply).trim() : CONFIG.errEmpty, 'ai');
-          }
+          var reply = extractReply(rawText);
+          appendMessage(reply && String(reply).trim() ? String(reply).trim() : CONFIG.errEmpty, 'ai');
           if (!isOpen) { unread++; updateBadge(); }
           playBeep();
-
-          if (CONFIG.leadCaptureEnabled && !leadFormShown && CONFIG.leadCaptureAfter > 0 &&
-              userMsgCount >= CONFIG.leadCaptureAfter) {
-            setTimeout(showLeadForm, 400);
-          }
         })
         .catch(function (err) {
           clearTimeout(timeout);
@@ -2229,33 +1715,6 @@
             try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); }
           }
         });
-    }
-
-    // ── Detect structured property-listing data in a webhook response.
-    //    Supports: {type:"listings", listings:[...]}, {listings:[...]},
-    //    a bare array of listing objects, or n8n's [{output:{listings:[...]}}] shape.
-    function extractListings(rawText) {
-      var data;
-      try { data = JSON.parse(rawText); } catch (e) { return null; }
-      function fromObj(o) {
-        if (!o || typeof o !== 'object') return null;
-        if (Array.isArray(o.listings)) return o.listings;
-        if (Array.isArray(o.properties)) return o.properties;
-        if (o.output && typeof o.output === 'object') return fromObj(o.output);
-        return null;
-      }
-      if (Array.isArray(data)) {
-        // Bare array of listing-like objects (has price/title/beds fields)?
-        if (data.length && typeof data[0] === 'object' && (data[0].price || data[0].beds || data[0].bedrooms || data[0].image)) {
-          return data;
-        }
-        for (var i = 0; i < data.length; i++) {
-          var r = fromObj(data[i]);
-          if (r) return r;
-        }
-        return null;
-      }
-      return fromObj(data);
     }
 
     // ── Extract reply from webhook response ──
@@ -2287,7 +1746,6 @@
     function clearConversation() {
       history = [];
       saveHistory();
-      // Wipe then re-render; requestAnimationFrame avoids forced reflow
       requestAnimationFrame(function () {
         messages.innerHTML = '';
         renderWelcome();
@@ -2301,7 +1759,6 @@
       var saved = loadHistory();
       renderWelcome();
       if (saved.length) {
-        // Render saved messages without animation for performance
         saved.forEach(function (m) {
           appendMessage(m.text, m.role, { time: m.time, skipStore: true, instant: true });
         });
@@ -2346,13 +1803,10 @@
     messages.addEventListener('click', function (e) {
       var chip = e.target.closest('.cw-chip');
       if (!chip) return;
-      var action = chip.getAttribute('data-action');
-      if (action === '__lead_form__') { hideChips(); showLeadForm(); return; }
-      if (action === '__booking_form__') { hideChips(); showBookingForm(); return; }
       var chipText = chip.getAttribute('data-chip') || chip.textContent.trim();
       input.value = chipText;
       autoResize();
-      sendMessage(); // for __listings__ and plain chips, just send as a normal message
+      sendMessage();
     });
 
     // Greeting bubble
@@ -2404,7 +1858,6 @@
     // ───────────────────────────────────────────────
     // INITIAL STATE
     // ───────────────────────────────────────────────
-    // Set initial aria-hidden so screen readers ignore closed widget
     widget.setAttribute('aria-hidden', 'true');
 
     bootstrapMessages();
@@ -2431,7 +1884,7 @@
         if (typeof text !== 'string' || !text.trim()) return;
         input.value = text;
         if (!isOpen) setOpen(true);
-        setTimeout(sendMessage, 50); // let widget open animate first
+        setTimeout(sendMessage, 50);
       },
       isOpen: function () { return isOpen; },
       config: CONFIG
