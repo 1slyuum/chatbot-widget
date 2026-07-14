@@ -53,30 +53,49 @@
   <p>Try the <code>data-theme="dark"</code> attribute to force dark mode regardless of page background.</p>
 </div>
 
-<!-- ─── Chat Widget Embed (v2, customized) ─── -->
-<script src="https://1slyuum.github.io/chatbot-widget/realestate-widget.js"
-  data-webhook="https://islemm.app.n8n.cloud/webhook/chat-webhook-id/chat"
-  data-name="Intero Digital Realty"
-  data-avatar-image="https://ugc.production.linktr.ee/TcSmwFlQTTeOqvbMNXaQ_8NQok2UtH9oewI2o?io=true&size=avatar-v3_0"
-  data-welcome-title="Welcome to Intero Digital Realty"
-  data-welcome-sub="Find your next home, book a viewing, or ask me anything."
-  data-initial-message="Hi! 👋 I'm your property assistant. Want to browse listings, book a viewing, or talk to an agent?"
-  data-powered-by="Intero Digital Realty"
-  data-theme="light"
-  data-color-primary="#008ed0"
+<!-- 1. Load the Chatbot Widget Stylesheet -->
+<link rel="stylesheet" href="https://1slyuum.github.io/chatbot-widget/chatbot.css">
 
-  data-chips="🏠:Browse Listings:__listings__, 📅:Book a Viewing:__booking_form__, 💰:Get Pre-Qualified, 📞:Talk to an Agent:__lead_form__"
+<!-- 2. Load the main Chatbot Widget JavaScript -->
+<script src="https://1slyuum.github.io/chatbot-widget/chatbot.js"></script>
 
-  data-whatsapp="15551234567"
-  data-phone="+15551234567"
-
-  data-langs="en,ar,fr"
-
-  data-lead-capture="true"
-  data-lead-capture-after="3"
-
-  data-booking="true"
-
-  data-listings-url="https://interodigitalrealty.com"
+<!-- 3. Initialize Chatbot with Custom settings -->
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    RealEstateChatbot.init({
+      // ⚠️ Client n8n Webhook URL (Change to their n8n instance)
+      webhook: "https://islempharm.app.n8n.cloud/webhook/chat-webhook-id/chat",
+      
+      // Branding Customizations
+      agencyName: "Luxury Mansions",     // Name shown in header & welcome screens
+      assistantName: "Emma",             // Name of the AI assistant
+      logo: "https://yourclient.com/logo.png",      // Optional: URL to agency logo
+      avatar: "https://yourclient.com/emma.png",    // Optional: URL to assistant avatar icon
+      
+      // Client Booking / Calendar Link
+      bookingUrl: "https://calendly.com/client-broker-name", 
+      
+      // Custom Color Themes (Button states, borders, and accents are derived dynamically)
+      theme: {
+        primary: "#081A33",   // Hex color for primary buttons & header background
+        accent: "#D4AF37",    // Hex color for borders, highlights & badges
+        mode: "auto"          // Theme mode: "light", "dark", or "auto" (matches user OS preferences)
+      },
+      
+      // Welcome Configuration
+      welcomeMessage: "Hello! Welcome to Luxury Mansions. Let me know what you are looking for today.",
+      suggestedQuestions: [
+        "What properties are available?",
+        "I'd like to book a property viewing",
+        "Connect me to an agent"
+      ],
+      
+      // Layout preferences
+      position: "bottom-right", // Float position: "bottom-right" or "bottom-left"
+      borderRadius: 16,        // Rounded corners radius (in pixels)
+      persistConversation: true // Restores previous messages if they browse pages
+    });
+  });
+</script>
 
   defer></script>
