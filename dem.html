@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Travel Chatbot — Embed Demo</title>
+  <style>
+    body { font-family: Georgia, serif; max-width: 720px; margin: 60px auto; padding: 0 24px; color: #1c2b3a; line-height: 1.7; }
+    h1 { color: #0B3D5C; }
+    code { background: #eef3f7; padding: 2px 6px; border-radius: 4px; font-size: 14px; }
+  </style>
+</head> 
+  <!-- Tay Travels AI Chat Widget
+     Paste this block into your InteleTravel Custom Code field. -->
+
+<link rel="stylesheet" href="https://1slyuum.github.io/chatbot-widget/chatbot-travel.css">
+<script src="https://1slyuum.github.io/chatbot-widget/chatbot-travel.js"></script>
+<script>
+  TayTravelsChatbot.init({
+    agencyName: 'Tay Travels',
+    assistantName: 'Taje',
+    webhook: 'https://islempharm.app.n8n.cloud/webhook/travel-chatbot',
+    theme: { primary: '#1E255D', accent: '#D50032' },
+    welcomeMessage: "Hi! I\u2019m Taje\u2019s assistant \u2014 where would you like to go?",
+    suggestedQuestions: ['Show me vacation deals', "I\u2019d like a cruise recommendation", 'Help me plan a trip'],
+    position: 'bottom-right'
+  });
+</script>
+
+<body>
+  
