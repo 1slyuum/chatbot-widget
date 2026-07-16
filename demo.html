@@ -63,28 +63,33 @@
     </div>
 
     <!-- Chatbot Widget JavaScript -->
-    <script src="chatbot-travel_1784207478323.js"></script>
-    
-    <!-- Widget Initialization -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            RealEstateChatbot.init({
-                webhook: 'https://islempharm.app.n8n.cloud/webhook/travel-chatbot',
-                agencyName: 'Travel Advisor',
-                assistantName: 'Alex',
-                theme: {
-                    primary: '#0B3D5C',
-                    accent: '#F2A93B',
-                    mode: 'auto'
-                },
-                welcomeMessage: "Hi! I'm Alex, your Travel Advisor. How can I help you plan your next adventure today?",
-                suggestedQuestions: [
-                    'Show me vacation deals',
-                    'Recommend a cruise',
-                    'Help me plan a trip'
-                ]
-            });
-        });
-    </script>
+    <!-- 1. Add the Widget Stylesheet to your <head> -->
+<link rel="stylesheet" href="chatbot-travel_1784207478323.css">
+
+<!-- 2. Add the Widget JavaScript before </body> -->
+<script src="chatbot-travel_1784207478323.js"></script>
+
+<!-- 3. Initialize the Chatbot -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        RealEstateChatbot.init({
+            webhook: 'https://islempharm.app.n8n.cloud/webhook/travel-chatbot',
+            agencyName: 'Travel Advisor',
+            assistantName: 'Alex',
+            theme: {
+                primary: '#0B3D5C',
+                accent: '#F2A93B',
+                mode: 'auto'
+            },
+            welcomeMessage: "Hi! I'm Alex, your Travel Advisor. How can I help you plan your next adventure today?",
+            suggestedQuestions: [
+                'Show me vacation deals',
+                'Recommend a cruise',
+                'Help me plan a trip'
+            ]
+        } );
+    });
+</script>
+
 </body>
 </html>
