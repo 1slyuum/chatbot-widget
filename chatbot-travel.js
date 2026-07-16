@@ -1,5 +1,5 @@
 /*!
- * Tay Travels AI Chatbot Widget v1.0.0
+ * Tay Travels AI Chatbot Widget v1.1.0
  * Production-ready AI chatbot for the Tay Travels advisor website.
  * Communicates with any n8n (or compatible) webhook backend.
  *
@@ -14,10 +14,22 @@
   'use strict';
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // GUARD · Prevent double-execution if the script tag is accidentally
+  // included more than once on the page (duplicate embed snippets, a CMS
+  // injecting it on every partial, etc). Without this, every click fires
+  // twice and you get duplicate messages/buttons in the chat.
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (window.TayTravelsChatbot) {
+    console.warn('[TayTravelsChatbot] Script already loaded on this page — skipping duplicate load. ' +
+      'Check your HTML for more than one <script src=".../chatbot-travel.js"> tag.');
+    return;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // SECTION 1 · CONSTANTS & DEFAULTS
   // ─────────────────────────────────────────────────────────────────────────────
 
-  const VERSION = '1.0.0';
+  const VERSION = '1.1.0';
   const STORAGE_PREFIX = 'ttc_';
   const MAX_INPUT_LENGTH = 1000;
   const MAX_MESSAGES_IN_DOM = 80;
@@ -39,6 +51,7 @@
       'Show me vacation deals',
       "I'd like a cruise recommendation",
       'Help me plan a trip',
+      'Do I need a passport or visa?',
     ],
     bookingUrl: null,
     position: 'bottom-right',
@@ -209,54 +222,32 @@
     clock: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
     users: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
     star: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-    star: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    ship: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 21c1.6 0 2.4-1 4-1s2.4 1 4 1 2.4-1 4-1 2.4 1 4 1 2.4-1 4-1"/><path d="M4 18l-1-6h18l-1 6"/><path d="M12 2v9"/><path d="M9 5h6l3 6H6l3-6z"/></svg>`,
+    shield: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+    idcard: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M4 17c.6-1.6 2-2.5 4-2.5s3.4.9 4 2.5"/><line x1="14" y1="9" x2="19" y2="9"/><line x1="14" y1="13" x2="19" y2="13"/></svg>`,
+    car: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13l1.5-4.5A2 2 0 0 1 6.4 7h11.2a2 2 0 0 1 1.9 1.5L21 13"/><rect x="2" y="13" width="20" height="6" rx="2"/><circle cx="7" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>`,
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
   // SECTION 4 · EVENT BUS
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Lightweight internal publish/subscribe system.
-   * Decouples modules from each other.
-   */
   const EventBus = (() => {
-    /** @type {Record<string, Function[]>} */
     const _listeners = Object.create(null);
-
     return {
-      /**
-       * Subscribe to an event.
-       * @param {string} event
-       * @param {Function} fn
-       */
       on(event, fn) {
         (_listeners[event] = _listeners[event] || []).push(fn);
       },
-
-      /**
-       * Unsubscribe from an event.
-       * @param {string} event
-       * @param {Function} fn
-       */
       off(event, fn) {
         if (_listeners[event]) {
           _listeners[event] = _listeners[event].filter((l) => l !== fn);
         }
       },
-
-      /**
-       * Emit an event with optional data payload.
-       * @param {string} event
-       * @param {*} [data]
-       */
       emit(event, data) {
         (_listeners[event] || []).slice().forEach((fn) => {
           try { fn(data); } catch (e) { /* never crash the bus */ }
         });
       },
-
-      /** Remove all listeners. */
       clear() {
         Object.keys(_listeners).forEach((k) => delete _listeners[k]);
       },
@@ -267,38 +258,22 @@
   // SECTION 5 · HTML SANITIZER (XSS Prevention)
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * A zero-dependency HTML sanitizer.
-   * Uses an allowlist of tags and attributes.
-   * Strips all event handlers, dangerous URL schemes, and unknown elements.
-   */
   const Sanitizer = (() => {
     const ALLOWED_TAGS = new Set([
       'a', 'b', 'blockquote', 'br', 'code', 'del', 'em', 'h1', 'h2', 'h3',
       'h4', 'i', 'ins', 'li', 'mark', 'ol', 'p', 'pre', 'small', 'span',
       'strong', 'sub', 'sup', 'ul',
     ]);
-
-    /** Attributes allowed globally on any permitted element */
     const GLOBAL_ATTRS = new Set(['class', 'id', 'title']);
-
-    /** Per-element attribute allowlists */
     const TAG_ATTRS = {
       a: new Set(['href', 'target', 'rel']),
     };
-
     const DANGEROUS_SCHEMES = /^(javascript|vbscript|data|blob):/i;
-
-    /** Tags that must be completely removed (content too) */
     const BLOCK_TAGS = new Set([
       'script', 'style', 'iframe', 'object', 'embed', 'form',
       'input', 'button', 'textarea', 'select', 'template', 'svg',
     ]);
 
-    /**
-     * Walk and sanitize a DOM node in-place.
-     * @param {Node} node
-     */
     function walk(node) {
       const children = Array.from(node.childNodes);
       for (const child of children) {
@@ -316,13 +291,11 @@
         }
 
         if (!ALLOWED_TAGS.has(tag)) {
-          // Unwrap: keep text children, discard the element shell
           while (child.firstChild) child.parentNode.insertBefore(child.firstChild, child);
           child.parentNode?.removeChild(child);
           continue;
         }
 
-        // Strip unsafe attributes
         const allowedForTag = TAG_ATTRS[tag] || new Set();
         for (const attr of Array.from(child.attributes)) {
           const name = attr.name.toLowerCase();
@@ -337,7 +310,6 @@
           }
         }
 
-        // Force safe link behavior
         if (tag === 'a') {
           child.setAttribute('target', '_blank');
           child.setAttribute('rel', 'noopener noreferrer');
@@ -347,11 +319,6 @@
       }
     }
 
-    /**
-     * Sanitize an HTML string and return safe HTML.
-     * @param {string} html
-     * @returns {string}
-     */
     function sanitize(html) {
       if (!html) return '';
       const tpl = document.createElement('template');
@@ -369,43 +336,29 @@
   // SECTION 6 · MARKDOWN PARSER
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Lightweight Markdown → sanitized HTML converter.
-   * Supports: headers, bold, italic, code, links, blockquotes, lists, strikethrough.
-   */
   const MarkdownParser = (() => {
-    /**
-     * @param {string} md
-     * @returns {string}
-     */
     function parse(md) {
       if (!md) return '';
 
-      // Step 1: extract and protect code blocks before escaping
       const codeBlocks = [];
       let s = md.replace(/```([\s\S]*?)```/g, (_, code) => {
         codeBlocks.push(code.trim());
         return `\x00CODE${codeBlocks.length - 1}\x00`;
       });
 
-      // Step 2: escape HTML entities
       s = escapeHtml(s);
 
-      // Step 3: restore protected code blocks as safe HTML
       s = s.replace(/\x00CODE(\d+)\x00/g, (_, i) =>
         `<pre><code>${escapeHtml(codeBlocks[parseInt(i, 10)])}</code></pre>`
       );
 
-      // Step 4: block-level elements
       s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>');
       s = s.replace(/^## (.+)$/gm, '<h2>$1</h2>');
       s = s.replace(/^# (.+)$/gm, '<h1>$1</h1>');
       s = s.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
       s = s.replace(/^(?:[-*] )(.+)$/gm, '<li>$1</li>');
-      // Wrap consecutive <li> in <ul>
       s = s.replace(/(<li>[\s\S]*?<\/li>)(?![\s\S]*?<li>)/g, (m) => `<ul>${m}</ul>`);
 
-      // Step 5: inline elements
       s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
       s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
       s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
@@ -413,7 +366,6 @@
       s = s.replace(/~~(.+?)~~/g, '<del>$1</del>');
       s = s.replace(/`(.+?)`/g, '<code>$1</code>');
 
-      // Links — the URL was HTML-entity-escaped; decode & re-sanitize
       s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, rawUrl) => {
         const url = rawUrl
           .replace(/&amp;/g, '&')
@@ -422,7 +374,6 @@
         return `<a href="${escapeHtml(url)}">${text}</a>`;
       });
 
-      // Step 6: line breaks
       s = s.replace(/\n\n+/g, '</p><p>');
       s = s.replace(/\n/g, '<br>');
 
@@ -438,25 +389,13 @@
   // SECTION 7 · STORAGE MODULE
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Thin wrapper around localStorage with a namespaced key prefix.
-   * Silently degrades if storage is unavailable (private browsing, etc.).
-   */
   const Storage = (() => {
-    /**
-     * @param {string} key
-     * @param {*} value
-     */
     function set(key, value) {
       try {
         localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value));
       } catch { /* storage full or unavailable */ }
     }
 
-    /**
-     * @param {string} key
-     * @returns {*}
-     */
     function get(key) {
       try {
         const raw = localStorage.getItem(STORAGE_PREFIX + key);
@@ -464,12 +403,10 @@
       } catch { return null; }
     }
 
-    /** @param {string} key */
     function remove(key) {
       try { localStorage.removeItem(STORAGE_PREFIX + key); } catch { /* ignore */ }
     }
 
-    /** Remove all widget-namespaced keys. */
     function clearAll() {
       try {
         Object.keys(localStorage)
@@ -485,19 +422,10 @@
   // SECTION 8 · PAGE CONTEXT MODULE
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Collects contextual information about the host page to attach to every
-   * webhook request. Enables n8n to understand the visitor's context.
-   */
   const Context = (() => {
-    /**
-     * Attempt to detect property information from page metadata/DOM.
-     * @returns {{ url: string|null, title: string|null, price: string|null, id: string|null }}
-     */
     function detectProperty() {
       const prop = { url: null, title: null, price: null, id: null };
       try {
-        // JSON-LD structured data
         for (const script of document.querySelectorAll('script[type="application/ld+json"]')) {
           try {
             const schemas = [].concat(JSON.parse(script.textContent));
@@ -512,7 +440,6 @@
           } catch { /* malformed JSON-LD — skip */ }
         }
 
-        // Open Graph tags
         if (!prop.title) {
           prop.title = document.querySelector('meta[property="og:title"]')?.getAttribute('content') || null;
         }
@@ -520,7 +447,6 @@
           prop.url = document.querySelector('meta[property="og:url"]')?.getAttribute('content') || null;
         }
 
-        // Common real estate DOM patterns for price
         if (!prop.price) {
           const priceSelectors = [
             '[data-price]', '[class*="listing-price"]', '[class*="property-price"]',
@@ -535,23 +461,17 @@
           }
         }
 
-        // Property ID from URL path
         if (!prop.id) {
           const m = window.location.pathname.match(/(?:property|listing|home|prop)[-/]([a-z0-9-]{2,})/i);
           if (m) prop.id = m[1];
         }
 
-        // data-* attributes on any element
         const propEl = document.querySelector('[data-property-id]');
         if (propEl) prop.id = propEl.getAttribute('data-property-id');
       } catch { /* never throw */ }
       return prop;
     }
 
-    /**
-     * Extract UTM query parameters from the current URL.
-     * @returns {Record<string, string|null>}
-     */
     function getUtm() {
       const p = new URLSearchParams(window.location.search);
       return {
@@ -563,10 +483,6 @@
       };
     }
 
-    /**
-     * Build the full context payload.
-     * @returns {Object}
-     */
     function collect() {
       return {
         url: window.location.href,
@@ -587,14 +503,7 @@
   // SECTION 9 · BUSINESS HOURS MODULE
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Determines whether the widget is within configured business hours.
-   */
   const BusinessHours = (() => {
-    /**
-     * @param {{ days: number[], start: string, end: string, tz: string } | null} cfg
-     * @returns {boolean} true = open; false = outside hours
-     */
     function isOpen(cfg) {
       if (!cfg) return true;
       try {
@@ -626,25 +535,15 @@
   // SECTION 10 · WEBHOOK CLIENT
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Handles all communication with the n8n webhook backend.
-   * Supports automatic retry with exponential back-off and request timeout.
-   */
   const WebhookClient = (() => {
     const MAX_RETRIES = 1;
     const TIMEOUT_MS = 30_000;
 
-    /**
-     * Send a payload to the webhook URL.
-     * @param {string} webhookUrl
-     * @param {Object} payload
-     * @returns {Promise<Object>}
-     */
-    async function send(webhookUrl, payload) {
+    async function send(webhookUrl, payload, { retries = MAX_RETRIES } = {}) {
       const t0 = Date.now();
       let lastErr;
 
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      for (let attempt = 0; attempt <= retries; attempt++) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -662,14 +561,23 @@
 
           if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
 
-          const data = await res.json();
+          const text = await res.text();
+          if (!text || !text.trim()) {
+            throw new Error('The assistant is thinking — please try again in a moment.');
+          }
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            throw new Error('The assistant returned an unexpected response. Please try again.');
+          }
           EventBus.emit('webhook:success', { payload, response: data, ms: Date.now() - t0 });
           return data;
         } catch (err) {
           clearTimeout(timer);
           lastErr = err;
           if (err.name === 'AbortError') throw new Error('Request timed out. Please try again.');
-          if (attempt < MAX_RETRIES) await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+          if (attempt < retries) await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
         }
       }
 
@@ -684,29 +592,16 @@
   // SECTION 11 · RESPONSE PARSER
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Normalises diverse webhook response shapes into a consistent
-   * { messages: MessageObject[], sessionId: string|null } structure.
-   *
-   * Designed to be easily extended: add new type handlers in the renderers below
-   * without touching the parser.
-   */
   const ResponseParser = (() => {
-    /**
-     * @param {*} raw  Raw value from fetch().json()
-     * @returns {{ messages: Object[], sessionId: string|null }}
-     */
     function parse(raw) {
       if (raw === null || raw === undefined) {
         return { messages: [{ type: 'error', content: 'No response from server.' }], sessionId: null };
       }
 
-      // Plain string
       if (typeof raw === 'string') {
         return { messages: [{ type: 'text', content: raw }], sessionId: null };
       }
 
-      // Array of messages
       if (Array.isArray(raw)) {
         const msgs = raw.filter((m) => m && typeof m.type === 'string');
         return { messages: msgs.length ? msgs : [{ type: 'text', content: JSON.stringify(raw) }], sessionId: null };
@@ -716,18 +611,15 @@
         return { messages: [{ type: 'error', content: 'Unexpected response format.' }], sessionId: null };
       }
 
-      // { messages: [...] }
       if (Array.isArray(raw.messages) && raw.messages.length) {
         const msgs = raw.messages.filter((m) => m && typeof m.type === 'string');
         return { messages: msgs, sessionId: raw.sessionId || null };
       }
 
-      // Single message object { type: 'text', content: '...' }
       if (typeof raw.type === 'string') {
         return { messages: [raw], sessionId: raw.sessionId || null };
       }
 
-      // Common n8n output field patterns
       const textContent =
         raw.output ||
         raw.text ||
@@ -740,7 +632,6 @@
         return { messages: [{ type: 'text', content: String(textContent) }], sessionId: raw.sessionId || null };
       }
 
-      // Last resort
       return {
         messages: [{ type: 'error', content: "I couldn't understand the response. Please try again." }],
         sessionId: null,
@@ -754,12 +645,6 @@
   // SECTION 12 · SHADOW DOM CSS
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Complete stylesheet injected into the Shadow DOM.
-   * Uses CSS custom properties (variables) derived from the config theme.
-   * Includes: layout, typography, all components, animations, dark mode,
-   * accessibility, responsive breakpoints.
-   */
   const SHADOW_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -773,7 +658,6 @@
   --rce-radius:16px;
   --rce-font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 
-  /* Light mode defaults */
   --rce-bg:#ffffff;
   --rce-bg2:#f8f9fb;
   --rce-surface:rgba(255,255,255,0.97);
@@ -864,7 +748,7 @@
   font-family:var(--rce-font);font-size:11px;font-weight:700;
   display:flex;align-items:center;justify-content:center;
   padding:0 5px;border:2.5px solid var(--rce-bg,#fff);
-  animation:rce-pop .3s cubic-bezier(.34,1.56,.64,1);
+  animation:ttc-pop .3s cubic-bezier(.34,1.56,.64,1);
 }
 .ttc-badge.ttc-hidden{display:none}
 
@@ -916,7 +800,7 @@
 .ttc-header-info{flex:1;min-width:0}
 .ttc-agent-name{font-family:var(--rce-font);font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ttc-status{display:flex;align-items:center;gap:5px;font-family:var(--rce-font);font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
-.ttc-status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:rce-pulse 2s infinite;flex-shrink:0}
+.ttc-status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:ttc-pulse 2s infinite;flex-shrink:0}
 
 .ttc-header-actions{display:flex;gap:4px}
 .ttc-hbtn{
@@ -991,84 +875,46 @@
 .ttc-qr.ttc-used{opacity:.5;pointer-events:none}
 
 /* ──────────── BUTTONS ──────────── */
-.ttc-btns{display:flex;flex-direction:column;gap:8px;max-width:280px;margin-top:2px}
+.ttc-btns{display:flex;flex-direction:column;gap:9px;width:100%;max-width:300px;margin-top:4px}
 .ttc-btn{
-  padding:10px 18px;border-radius:10px;border:none;
-  font-family:var(--rce-font);font-size:13px;font-weight:600;
-  cursor:pointer;transition:all .2s;text-align:center;text-decoration:none;
-  display:flex;align-items:center;justify-content:center;gap:8px;outline:none;
+  width:100%;padding:13px 14px;border-radius:12px;border:1.5px solid var(--rce-border);
+  font-family:var(--rce-font);font-size:13.5px;font-weight:600;
+  cursor:pointer;transition:all .22s ease;text-align:left;text-decoration:none;
+  display:flex;align-items:center;gap:10px;outline:none;
+  background:var(--rce-bg);color:var(--rce-text);
+  box-shadow:0 2px 8px rgba(var(--rce-primary-rgb),.05);
 }
+.ttc-btn-nav-icon{
+  width:36px;height:36px;border-radius:9px;flex-shrink:0;
+  background:rgba(var(--rce-primary-rgb),.08);
+  display:flex;align-items:center;justify-content:center;
+  transition:background .22s;
+}
+.ttc-btn-nav-icon svg{width:17px;height:17px;color:var(--rce-primary)}
+.ttc-btn-nav-label{flex:1;min-width:0}
+.ttc-btn-nav-label strong{display:block;font-size:13.5px;color:var(--rce-text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttc-btn-nav-label span{display:block;font-size:11px;font-weight:400;color:var(--rce-text2);margin-top:1px}
+.ttc-btn-nav-arrow{flex-shrink:0;color:var(--rce-muted);transition:transform .2s,color .2s}
+.ttc-btn-nav-arrow svg{width:14px;height:14px;display:block}
+.ttc-btn:hover{background:rgba(var(--rce-primary-rgb),.04);border-color:rgba(var(--rce-primary-rgb),.35);transform:translateX(2px)}
+.ttc-btn:hover .ttc-btn-nav-arrow{transform:translateX(3px);color:var(--rce-primary)}
+.ttc-btn:hover .ttc-btn-nav-icon{background:rgba(var(--rce-primary-rgb),.14)}
 .ttc-btn-accent{
-  background:linear-gradient(135deg,var(--rce-accent),rgba(var(--rce-accent-rgb),.8));
-  color:var(--rce-primary);box-shadow:0 4px 14px rgba(var(--rce-accent-rgb),.3);
+  background:linear-gradient(135deg,var(--rce-primary),rgba(var(--rce-primary-rgb),.85));
+  color:#fff;border-color:transparent;
+  box-shadow:0 4px 16px rgba(var(--rce-primary-rgb),.3);
 }
-.ttc-btn-accent:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(var(--rce-accent-rgb),.4)}
-.ttc-btn-outline{background:transparent;border:1.5px solid var(--rce-accent);color:var(--rce-text)}
-.ttc-btn-outline:hover{background:rgba(var(--rce-accent-rgb),.08);transform:translateY(-1px)}
+.ttc-btn-accent .ttc-btn-nav-icon{background:rgba(255,255,255,.18)}
+.ttc-btn-accent .ttc-btn-nav-icon svg{color:#fff}
+.ttc-btn-accent .ttc-btn-nav-label strong{color:#fff}
+.ttc-btn-accent .ttc-btn-nav-label span{color:rgba(255,255,255,.72)}
+.ttc-btn-accent .ttc-btn-nav-arrow{color:rgba(255,255,255,.55)}
+.ttc-btn-accent:hover{transform:translateX(2px);box-shadow:0 7px 22px rgba(var(--rce-primary-rgb),.42);border-color:transparent}
+.ttc-btn-accent:hover .ttc-btn-nav-icon{background:rgba(255,255,255,.26)}
+.ttc-btn-accent:hover .ttc-btn-nav-arrow{color:rgba(255,255,255,.95);transform:translateX(3px)}
 .ttc-btn:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
-.ttc-btn:active{transform:scale(.97)!important}
+.ttc-btn:active{transform:scale(.98)!important}
 .ttc-btn svg{width:15px;height:15px;flex-shrink:0}
-
-/* ──────────── PROPERTY CARD ──────────── */
-.ttc-card{
-  background:var(--rce-card-bg);border-radius:14px;
-  border:1px solid var(--rce-border);overflow:hidden;
-  width:280px;flex-shrink:0;
-  box-shadow:var(--rce-shadow-sm);transition:transform .2s,box-shadow .2s;
-}
-.ttc-card:hover{transform:translateY(-3px);box-shadow:var(--rce-shadow)}
-
-.ttc-card-img-wrap{position:relative;overflow:hidden}
-.ttc-card-img{width:100%;height:165px;object-fit:cover;display:block;transition:transform .4s ease}
-.ttc-card:hover .ttc-card-img{transform:scale(1.04)}
-.ttc-card-img-placeholder{
-  width:100%;height:165px;
-  background:linear-gradient(145deg,rgba(var(--rce-primary-rgb),.85),rgba(var(--rce-primary-rgb),.55));
-  display:flex;align-items:center;justify-content:center;color:rgba(var(--rce-accent-rgb),.55);
-}
-.ttc-card-img-placeholder svg{width:52px;height:52px}
-
-.ttc-card-badges{position:absolute;top:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap}
-.ttc-cbadge{
-  padding:3px 10px;border-radius:20px;
-  font-family:var(--rce-font);font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
-}
-.ttc-cbadge-sale{background:var(--rce-accent);color:var(--rce-primary)}
-.ttc-cbadge-rent{background:#3b82f6;color:#fff}
-.ttc-cbadge-sold{background:#ef4444;color:#fff}
-.ttc-cbadge-type{background:rgba(var(--rce-primary-rgb),.75);color:#fff;backdrop-filter:blur(4px)}
-
-.ttc-card-body{padding:14px}
-.ttc-card-price{
-  font-family:var(--rce-font);font-size:21px;font-weight:800;
-  color:var(--rce-accent);letter-spacing:-.5px;margin-bottom:3px;
-}
-.ttc-card-title{
-  font-family:var(--rce-font);font-size:13.5px;font-weight:600;color:var(--rce-text);
-  margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.ttc-card-addr{
-  font-family:var(--rce-font);font-size:12px;color:var(--rce-text2);
-  margin-bottom:10px;display:flex;align-items:center;gap:4px;
-}
-.ttc-card-addr svg{width:11px;height:11px;flex-shrink:0;color:var(--rce-accent)}
-
-.ttc-card-stats{display:flex;gap:10px;margin-bottom:11px;flex-wrap:wrap}
-.ttc-stat{display:flex;align-items:center;gap:3px;font-family:var(--rce-font);font-size:12px;color:var(--rce-text2)}
-.ttc-stat svg{width:12px;height:12px;color:var(--rce-accent);flex-shrink:0}
-
-.ttc-card-desc{
-  font-family:var(--rce-font);font-size:12px;color:var(--rce-text2);line-height:1.5;
-  margin-bottom:12px;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-}
-.ttc-card-actions{display:flex;gap:8px}
-.ttc-card-actions .ttc-btn{flex:1;font-size:12px;padding:8px 10px;border-radius:9px}
-
-/* Card carousel */
-.ttc-carousel{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;max-width:100%}
-.ttc-carousel::-webkit-scrollbar{height:3px}
-.ttc-carousel::-webkit-scrollbar-thumb{background:var(--rce-accent);border-radius:2px}
 
 /* ──────────── LEAD FORM ──────────── */
 .ttc-form{
@@ -1212,8 +1058,8 @@
 /* ──────────── ANIMATIONS ──────────── */
 @keyframes rce-msgIn{from{opacity:0;transform:translateY(10px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes rce-bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-7px);opacity:1}}
-@keyframes rce-pulse{0%,100%{opacity:1}50%{opacity:.45}}
-@keyframes rce-pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes ttc-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes ttc-pop{from{transform:scale(0)}to{transform:scale(1)}}
 @keyframes rce-handoff-pulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--rce-accent-rgb),.45)}50%{box-shadow:0 0 0 12px rgba(var(--rce-accent-rgb),0)}}
 
 /* ──────────── REDIRECT MSG ──────────── */
@@ -1232,40 +1078,21 @@
   // SECTION 13 · MESSAGE RENDERERS
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Registry of message type renderers.
-   * Each renderer receives the message object + the ChatWidget instance
-   * and returns a DOM Node (or null to skip).
-   *
-   * Adding a new message type: add a key here that matches the `type` field
-   * returned by the webhook. The renderer function receives (message, widget).
-   *
-   * @type {Record<string, (msg: Object, widget: ChatWidget) => Node | null>}
-   */
   const Renderers = {
-    /**
-     * Plain text message.
-     */
     text(msg) {
       const el = document.createElement('div');
-      el.className = 'ttc-bubble rce-bot';
+      el.className = 'ttc-bubble ttc-bot';
       el.textContent = msg.content || '';
       return el;
     },
 
-    /**
-     * Markdown message — parsed to sanitized HTML.
-     */
     markdown(msg) {
       const el = document.createElement('div');
-      el.className = 'ttc-bubble rce-bot';
+      el.className = 'ttc-bubble ttc-bot';
       el.innerHTML = MarkdownParser.parse(msg.content || '');
       return el;
     },
 
-    /**
-     * Quick reply chips — pill buttons that send a message when clicked.
-     */
     quick_replies(msg, widget) {
       const items = Array.isArray(msg.items) ? msg.items : [];
       if (!items.length) return null;
@@ -1290,34 +1117,71 @@
       return wrap;
     },
 
-    /**
-     * Styled CTA button group.
-     */
     buttons(msg, widget) {
       const items = Array.isArray(msg.items) ? msg.items : [];
       if (!items.length) return null;
+
+      function iconForItem(item) {
+        const key = (item.icon || item.label || item.value || '').toLowerCase();
+        if (/cruise|ship|sail|sea/.test(key))   return Icons.ship;
+        if (/flight|fly|air|plane/.test(key))   return Icons.plane;
+        if (/hotel|stay|resort|room|sleep/.test(key)) return Icons.bed;
+        if (/group|team|party|people|friends/.test(key)) return Icons.users;
+        if (/insur|protect|shield|cover/.test(key)) return Icons.shield;
+        if (/passport|visa|id.?card/.test(key)) return Icons.idcard;
+        if (/ride|car|transfer|taxi|shuttle/.test(key)) return Icons.car;
+        if (/contact|email|reach/.test(key)) return Icons.contact;
+        if (/book|reserve|enquire|quote/.test(key)) return Icons.calendar;
+        if (/location|destination|where|place/.test(key)) return Icons.location;
+        if (/plan|trip|vacation|package/.test(key)) return Icons.calendar;
+        return Icons.arrow;
+      }
 
       const wrap = document.createElement('div');
       wrap.className = 'ttc-btns';
       wrap.setAttribute('role', 'group');
 
       items.forEach((item, i) => {
-        const btn = document.createElement(item.url ? 'a' : 'button');
-        btn.className = `rce-btn ${i === 0 ? 'ttc-btn-accent' : 'ttc-btn-outline'}`;
+        const tag = item.url ? 'a' : 'button';
+        const btn = document.createElement(tag);
+        btn.className = `ttc-btn${i === 0 ? ' ttc-btn-accent' : ''}`;
 
         if (item.url) {
           btn.href = item.url;
           btn.target = '_blank';
           btn.rel = 'noopener noreferrer';
-          btn.appendChild(svgEl(Icons.externalLink));
         }
 
-        const label = document.createElement('span');
-        label.textContent = item.label || item.value || '';
-        btn.appendChild(label);
+        const iconBox = document.createElement('div');
+        iconBox.className = 'ttc-btn-nav-icon';
+        iconBox.appendChild(svgEl(iconForItem(item)));
+        btn.appendChild(iconBox);
+
+        const labelWrap = document.createElement('div');
+        labelWrap.className = 'ttc-btn-nav-label';
+        const strong = document.createElement('strong');
+        strong.textContent = item.label || item.value || '';
+        labelWrap.appendChild(strong);
+        if (item.subtitle) {
+          const sub = document.createElement('span');
+          sub.textContent = item.subtitle;
+          labelWrap.appendChild(sub);
+        }
+        btn.appendChild(labelWrap);
+
+        const arrow = document.createElement('div');
+        arrow.className = 'ttc-btn-nav-arrow';
+        arrow.appendChild(svgEl(Icons.arrow));
+        btn.appendChild(arrow);
 
         if (!item.url) {
-          btn.addEventListener('click', () => widget.sendMessage(item.value || item.label));
+          btn.addEventListener('click', () => {
+            if (item.formTrigger) {
+              widget._openLeadForm(item);
+            } else {
+              widget.sendMessage(item.value || item.label);
+            }
+          });
         }
 
         wrap.appendChild(btn);
@@ -1326,76 +1190,10 @@
       return wrap;
     },
 
-    /**
-     * Single property card.
-     */
-    property_card(msg, widget) {
-      return _buildPropertyCard(msg.property || msg, widget);
-    },
-
-    /**
-     * Horizontally scrollable carousel of property cards.
-     */
-    property_cards(msg, widget) {
-      const props = Array.isArray(msg.properties) ? msg.properties : [];
-      if (!props.length) return null;
-
-      const carousel = document.createElement('div');
-      carousel.className = 'ttc-carousel';
-      carousel.setAttribute('role', 'list');
-      carousel.setAttribute('aria-label', 'Property listings');
-
-      props.forEach((p) => {
-        const card = _buildPropertyCard(p, widget);
-        if (card) {
-          card.setAttribute('role', 'listitem');
-          carousel.appendChild(card);
-        }
-      });
-
-      return carousel;
-    },
-
-    /**
-     * Single trip / package card.
-     */
-    trip_card(msg, widget) {
-      return _buildTripCard(msg.trip || msg, widget);
-    },
-
-    /**
-     * Horizontally scrollable carousel of trip cards.
-     */
-    trip_cards(msg, widget) {
-      const trips = Array.isArray(msg.trips) ? msg.trips : [];
-      if (!trips.length) return null;
-
-      const carousel = document.createElement('div');
-      carousel.className = 'ttc-carousel';
-      carousel.setAttribute('role', 'list');
-      carousel.setAttribute('aria-label', 'Trip recommendations');
-
-      trips.forEach((t) => {
-        const card = _buildTripCard(t, widget);
-        if (card) {
-          card.setAttribute('role', 'listitem');
-          carousel.appendChild(card);
-        }
-      });
-
-      return carousel;
-    },
-
-    /**
-     * Lead capture form.
-     */
     lead_form(msg, widget) {
       return _buildLeadForm(msg, widget);
     },
 
-    /**
-     * Human handoff state.
-     */
     handoff(msg) {
       const wrap = document.createElement('div');
       wrap.className = 'ttc-handoff';
@@ -1414,9 +1212,6 @@
       return wrap;
     },
 
-    /**
-     * Redirect — shows a CTA button, or auto-redirects if msg.auto is true.
-     */
     redirect(msg, widget) {
       if (msg.auto && msg.url) {
         setTimeout(() => { window.open(msg.url, '_blank', 'noopener,noreferrer'); }, 800);
@@ -1434,7 +1229,7 @@
 
       if (msg.url) {
         const a = document.createElement('a');
-        a.className = 'ttc-btn rce-btn-accent';
+        a.className = 'ttc-btn ttc-btn-accent';
         a.href = msg.url;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
@@ -1448,9 +1243,6 @@
       return wrap;
     },
 
-    /**
-     * Error message display.
-     */
     error(msg) {
       const wrap = document.createElement('div');
       wrap.className = 'ttc-errmsg';
@@ -1466,354 +1258,6 @@
     },
   };
 
-  /**
-   * Build a luxury property card DOM node from a property data object.
-   * @param {Object} p  Property data
-   * @param {ChatWidget} widget
-   * @returns {HTMLElement}
-   */
-  function _buildPropertyCard(p, widget) {
-    if (!p) return null;
-
-    const card = document.createElement('article');
-    card.className = 'ttc-card';
-
-    // ── Image area ──
-    const imgWrap = document.createElement('div');
-    imgWrap.className = 'ttc-card-img-wrap';
-
-    if (p.image) {
-      const img = document.createElement('img');
-      img.className = 'ttc-card-img';
-      img.alt = p.title || 'Property image';
-      img.loading = 'lazy';
-      // Use IntersectionObserver for lazy loading
-      img.dataset.src = p.image;
-      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // 1px placeholder
-      _lazyLoad(img);
-      imgWrap.appendChild(img);
-    } else {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'ttc-card-img-placeholder';
-      placeholder.appendChild(svgEl(Icons.home));
-      imgWrap.appendChild(placeholder);
-    }
-
-    // Status / type badges
-    const badges = document.createElement('div');
-    badges.className = 'ttc-card-badges';
-
-    if (p.status) {
-      const badge = document.createElement('span');
-      const statusLower = p.status.toLowerCase().replace(/\s+/g, '-');
-      const cls = statusLower.includes('sale') ? 'ttc-cbadge-sale'
-        : statusLower.includes('rent') ? 'ttc-cbadge-rent'
-        : statusLower.includes('sold') ? 'ttc-cbadge-sold'
-        : 'ttc-cbadge-type';
-      badge.className = `rce-cbadge ${cls}`;
-      badge.textContent = p.status;
-      badges.appendChild(badge);
-    }
-
-    if (p.type) {
-      const typeBadge = document.createElement('span');
-      typeBadge.className = 'ttc-cbadge rce-cbadge-type';
-      typeBadge.textContent = p.type;
-      badges.appendChild(typeBadge);
-    }
-
-    if (badges.children.length) imgWrap.appendChild(badges);
-    card.appendChild(imgWrap);
-
-    // ── Body ──
-    const body = document.createElement('div');
-    body.className = 'ttc-card-body';
-
-    // Price
-    if (p.price !== undefined && p.price !== null) {
-      const price = document.createElement('div');
-      price.className = 'ttc-card-price';
-      const numPrice = parseFloat(String(p.price).replace(/[^0-9.]/g, ''));
-      price.textContent = isNaN(numPrice)
-        ? String(p.price)
-        : formatCurrency(numPrice, p.currency || 'USD', widget._config.locale);
-      body.appendChild(price);
-    }
-
-    // Title
-    if (p.title) {
-      const title = document.createElement('div');
-      title.className = 'ttc-card-title';
-      title.textContent = p.title;
-      title.title = p.title;
-      body.appendChild(title);
-    }
-
-    // Address
-    if (p.address) {
-      const addr = document.createElement('div');
-      addr.className = 'ttc-card-addr';
-      addr.appendChild(svgEl(Icons.location));
-      const addrText = document.createElement('span');
-      addrText.textContent = p.address;
-      addr.appendChild(addrText);
-      body.appendChild(addr);
-    }
-
-    // Stats row
-    const stats = [];
-    if (p.bedrooms != null) stats.push({ icon: Icons.bed, val: `${p.bedrooms} Bed${p.bedrooms !== 1 ? 's' : ''}` });
-    if (p.bathrooms != null) stats.push({ icon: Icons.bath, val: `${p.bathrooms} Bath${p.bathrooms !== 1 ? 's' : ''}` });
-    if (p.garage != null) stats.push({ icon: Icons.garage, val: `${p.garage} Car` });
-    if (p.sqft != null) stats.push({ icon: Icons.sqft, val: `${Number(p.sqft).toLocaleString()} ft²` });
-
-    if (stats.length) {
-      const statsRow = document.createElement('div');
-      statsRow.className = 'ttc-card-stats';
-      stats.forEach((s) => {
-        const stat = document.createElement('div');
-        stat.className = 'ttc-stat';
-        stat.appendChild(svgEl(s.icon));
-        const v = document.createElement('span');
-        v.textContent = s.val;
-        stat.appendChild(v);
-        statsRow.appendChild(stat);
-      });
-      body.appendChild(statsRow);
-    }
-
-    // Description
-    if (p.description) {
-      const desc = document.createElement('div');
-      desc.className = 'ttc-card-desc';
-      desc.textContent = p.description;
-      body.appendChild(desc);
-    }
-
-    // Action buttons
-    const actions = document.createElement('div');
-    actions.className = 'ttc-card-actions';
-
-    if (p.url) {
-      const viewBtn = document.createElement('a');
-      viewBtn.className = 'ttc-btn rce-btn-outline';
-      viewBtn.href = p.url;
-      viewBtn.target = '_blank';
-      viewBtn.rel = 'noopener noreferrer';
-      viewBtn.setAttribute('aria-label', `View property: ${p.title || ''}`);
-      viewBtn.appendChild(svgEl(Icons.eye));
-      const vLbl = document.createElement('span');
-      vLbl.textContent = 'View';
-      viewBtn.appendChild(vLbl);
-      actions.appendChild(viewBtn);
-    }
-
-    if (widget._config.bookingUrl) {
-      const bookBtn = document.createElement('a');
-      bookBtn.className = 'ttc-btn rce-btn-accent';
-      bookBtn.href = widget._config.bookingUrl;
-      bookBtn.target = '_blank';
-      bookBtn.rel = 'noopener noreferrer';
-      bookBtn.setAttribute('aria-label', `Schedule viewing for: ${p.title || 'property'}`);
-      bookBtn.appendChild(svgEl(Icons.calendar));
-      const bLbl = document.createElement('span');
-      bLbl.textContent = 'Book';
-      bookBtn.appendChild(bLbl);
-      actions.appendChild(bookBtn);
-    }
-
-    if (actions.children.length) body.appendChild(actions);
-    card.appendChild(body);
-
-    return card;
-  }
-
-  /**
-   * Build a luxury trip/package card DOM node from a trip data object.
-   * @param {Object} t  Trip data { title, price, location, type, duration,
-   *                     travelers, rating, tag, image, url }
-   * @param {ChatWidget} widget
-   * @returns {HTMLElement}
-   */
-  function _buildTripCard(t, widget) {
-    if (!t) return null;
-
-    const card = document.createElement('article');
-    card.className = 'ttc-card';
-
-    // ── Image area ──
-    const imgWrap = document.createElement('div');
-    imgWrap.className = 'ttc-card-img-wrap';
-
-    if (t.image) {
-      const img = document.createElement('img');
-      img.className = 'ttc-card-img';
-      img.alt = t.title || 'Trip image';
-      img.loading = 'lazy';
-      img.dataset.src = t.image;
-      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-      _lazyLoad(img);
-      imgWrap.appendChild(img);
-    } else {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'ttc-card-img-placeholder';
-      placeholder.appendChild(svgEl(Icons.plane));
-      imgWrap.appendChild(placeholder);
-    }
-
-    // Badges: trip type (Flight/Hotel/Cruise/Package) and a promo tag
-    const badges = document.createElement('div');
-    badges.className = 'ttc-card-badges';
-
-    if (t.type) {
-      const typeBadge = document.createElement('span');
-      typeBadge.className = 'ttc-cbadge rce-cbadge-type';
-      typeBadge.textContent = t.type;
-      badges.appendChild(typeBadge);
-    }
-
-    if (t.tag) {
-      const tagBadge = document.createElement('span');
-      tagBadge.className = 'ttc-cbadge rce-cbadge-sale';
-      tagBadge.textContent = t.tag;
-      badges.appendChild(tagBadge);
-    }
-
-    if (badges.children.length) imgWrap.appendChild(badges);
-    card.appendChild(imgWrap);
-
-    // ── Body ──
-    const body = document.createElement('div');
-    body.className = 'ttc-card-body';
-
-    // Price
-    if (t.price !== undefined && t.price !== null) {
-      const price = document.createElement('div');
-      price.className = 'ttc-card-price';
-      const numPrice = parseFloat(String(t.price).replace(/[^0-9.]/g, ''));
-      const priceText = isNaN(numPrice)
-        ? String(t.price)
-        : formatCurrency(numPrice, t.currency || 'USD', widget._config.locale);
-      price.textContent = t.priceUnit ? `${priceText} ${t.priceUnit}` : priceText;
-      body.appendChild(price);
-    }
-
-    // Title
-    if (t.title) {
-      const title = document.createElement('div');
-      title.className = 'ttc-card-title';
-      title.textContent = t.title;
-      title.title = t.title;
-      body.appendChild(title);
-    }
-
-    // Location
-    if (t.location) {
-      const addr = document.createElement('div');
-      addr.className = 'ttc-card-addr';
-      addr.appendChild(svgEl(Icons.location));
-      const addrText = document.createElement('span');
-      addrText.textContent = t.location;
-      addr.appendChild(addrText);
-      body.appendChild(addr);
-    }
-
-    // Stats row: duration, travelers, rating
-    const stats = [];
-    if (t.duration != null) stats.push({ icon: Icons.clock, val: t.duration });
-    if (t.travelers != null) stats.push({ icon: Icons.users, val: `${t.travelers} traveler${t.travelers !== 1 ? 's' : ''}` });
-    if (t.rating != null) stats.push({ icon: Icons.star, val: `${t.rating}` });
-
-    if (stats.length) {
-      const statsRow = document.createElement('div');
-      statsRow.className = 'ttc-card-stats';
-      stats.forEach((s) => {
-        const stat = document.createElement('div');
-        stat.className = 'ttc-stat';
-        stat.appendChild(svgEl(s.icon));
-        const v = document.createElement('span');
-        v.textContent = s.val;
-        stat.appendChild(v);
-        statsRow.appendChild(stat);
-      });
-      body.appendChild(statsRow);
-    }
-
-    // Description
-    if (t.description) {
-      const desc = document.createElement('div');
-      desc.className = 'ttc-card-desc';
-      desc.textContent = t.description;
-      body.appendChild(desc);
-    }
-
-    // Action buttons
-    const actions = document.createElement('div');
-    actions.className = 'ttc-card-actions';
-
-    if (t.url) {
-      const viewBtn = document.createElement('a');
-      viewBtn.className = 'ttc-btn rce-btn-outline';
-      viewBtn.href = t.url;
-      viewBtn.target = '_blank';
-      viewBtn.rel = 'noopener noreferrer';
-      viewBtn.setAttribute('aria-label', `View trip: ${t.title || ''}`);
-      viewBtn.appendChild(svgEl(Icons.eye));
-      const vLbl = document.createElement('span');
-      vLbl.textContent = 'View';
-      viewBtn.appendChild(vLbl);
-      actions.appendChild(viewBtn);
-    }
-
-    if (widget._config.bookingUrl) {
-      const bookBtn = document.createElement('a');
-      bookBtn.className = 'ttc-btn rce-btn-accent';
-      bookBtn.href = widget._config.bookingUrl;
-      bookBtn.target = '_blank';
-      bookBtn.rel = 'noopener noreferrer';
-      bookBtn.setAttribute('aria-label', `Enquire about: ${t.title || 'trip'}`);
-      bookBtn.appendChild(svgEl(Icons.calendar));
-      const bLbl = document.createElement('span');
-      bLbl.textContent = 'Enquire';
-      bookBtn.appendChild(bLbl);
-      actions.appendChild(bookBtn);
-    }
-
-    if (actions.children.length) body.appendChild(actions);
-    card.appendChild(body);
-
-    return card;
-  }
-
-  /**
-   * Lazy-load a property card image using IntersectionObserver.
-   * @param {HTMLImageElement} img
-   */
-  function _lazyLoad(img) {
-    if (!('IntersectionObserver' in window)) {
-      img.src = img.dataset.src;
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.src = entry.target.dataset.src;
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { rootMargin: '100px' }
-    );
-    observer.observe(img);
-  }
-
-  /**
-   * Build a lead capture form DOM node.
-   * @param {Object} msg
-   * @param {ChatWidget} widget
-   * @returns {HTMLElement}
-   */
   function _buildLeadForm(msg, widget) {
     const allowedFields = ['name', 'email', 'phone', 'destination', 'tripType', 'travelDates', 'message'];
     const fields = (Array.isArray(msg.fields) ? msg.fields : allowedFields)
@@ -1854,7 +1298,7 @@
       const label = document.createElement('label');
       label.className = 'ttc-label';
       label.textContent = def.label + (def.required ? ' *' : '');
-      const inputId = `rce-field-${f}`;
+      const inputId = `ttc-field-${f}`;
       label.setAttribute('for', inputId);
       fieldWrap.appendChild(label);
 
@@ -1900,7 +1344,6 @@
       inputEls[f] = { input, errEl, def };
     });
 
-    // GDPR consent
     const consentWrap = document.createElement('div');
     consentWrap.className = 'ttc-consent';
     const checkbox = document.createElement('input');
@@ -1915,9 +1358,8 @@
     consentWrap.appendChild(consentLbl);
     form.appendChild(consentWrap);
 
-    // Submit button
     const submitBtn = document.createElement('button');
-    submitBtn.className = 'ttc-btn rce-btn-accent';
+    submitBtn.className = 'ttc-btn ttc-btn-accent';
     submitBtn.style.width = '100%';
     submitBtn.style.marginTop = '4px';
     submitBtn.textContent = msg.submitLabel || 'Send Enquiry';
@@ -1929,11 +1371,9 @@
     form.appendChild(submitBtn);
     form.appendChild(consentErr);
 
-    // Submit handler
     submitBtn.addEventListener('click', async () => {
       let valid = true;
 
-      // Validate fields
       for (const [, { input: inp, errEl, def }] of Object.entries(inputEls)) {
         errEl.textContent = '';
         inp.classList.remove('ttc-err');
@@ -1973,13 +1413,12 @@
           formData,
         });
 
-        // Show success state
         form.innerHTML = '';
         const ok = document.createElement('div');
         ok.className = 'ttc-form-ok';
         ok.appendChild(svgEl(Icons.check));
         const okText = document.createElement('span');
-        okText.textContent = "Thanks! We'll be in touch soon.";
+        okText.textContent = 'Enquiry sent';
         ok.appendChild(okText);
         form.appendChild(ok);
       } catch {
@@ -1993,15 +1432,189 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // SECTION 13b · AUTO-NAVIGATION — keyword → site buttons
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const AUTO_NAV = [
+    {
+      keywords: /cruise|ship|sail|caribbean|mediterranean|bahamas|alaska|voyage|royal|carnival|ncl|celebrity|disney cruise/i,
+      items: [
+        {
+          label: 'Browse Cruises',
+          subtitle: 'Caribbean, Mediterranean & more',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'cruise',
+        },
+        {
+          label: 'Get a Cruise Quote',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Your Cruise Quote',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /flight|fly|airline|airfare|ticket|airport|one.way|round.trip|nonstop|layover/i,
+      items: [
+        {
+          label: 'Search Flights',
+          subtitle: 'Best fares to any destination',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'plane',
+        },
+        {
+          label: 'Ask Taje About Flights',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Your Flight Quote',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /hotel|stay|resort|room|accommodation|airbnb|lodge|inn|suite|villa|all.inclusive/i,
+      items: [
+        {
+          label: 'Browse Hotels & Stays',
+          subtitle: 'Resorts, villas & curated stays',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'bed',
+        },
+        {
+          label: 'Ask Taje About Stays',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Your Stay Recommendation',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /group|party|reunion|corporate|team|friends|wedding|honeymoon|bachelorette|birthday|family trip|church|sorority|fraternity/i,
+      items: [
+        {
+          label: 'Plan a Group Vacation',
+          subtitle: 'Birthdays, reunions & group getaways',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'group',
+        },
+        {
+          label: 'Contact Taje for Groups',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Your Group Quote',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /insur|protect|cover|policy|cancel|emergency|medical|lost bag|refund/i,
+      items: [
+        {
+          label: 'Travel Insurance',
+          subtitle: 'Peace of mind for every journey',
+          url: 'https://www.etravelprotection.com/allianz/home',
+          icon: 'shield',
+        },
+        {
+          label: 'Why You Need Insurance',
+          subtitle: 'Read Taje\'s guide (PDF)',
+          url: 'https://d3nyn9h0k44yua.cloudfront.net/media/backoffice/us/pdf/WhyPurchaseInsurance.pdf',
+          icon: 'externalLink',
+        },
+      ],
+    },
+    {
+      keywords: /activity|activities|excursion|tour|experience|things to do|adventure|event/i,
+      items: [
+        {
+          label: 'Browse Activities & Tours',
+          subtitle: 'Excursions & local experiences',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'calendar',
+        },
+        {
+          label: 'Ask Taje',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Activity Recommendations',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /ride|car service|airport pickup|airport transfer|shuttle|taxi|car rental|private driver/i,
+      items: [
+        {
+          label: 'Browse Rides',
+          subtitle: 'Airport transfers & private cars',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'ride',
+        },
+        {
+          label: 'Ask Taje About Rides',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Your Ride Quote',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /passport|visa|entry requirement|documentation needed|travel document/i,
+      items: [
+        {
+          label: 'Passports & Visas',
+          subtitle: '40% off service fees via CIBT',
+          url: 'https://cibtvisas.com/?login=inteletravel',
+          icon: 'idcard',
+        },
+        {
+          label: 'Ask Taje',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Help With Your Documents',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /book|reserve|enquire|contact|quote|plan|help|vacation|trip|package|deal|where.*go|going.*to|travel/i,
+      items: [
+        {
+          label: 'Book with Taje',
+          subtitle: 'Start planning your dream trip',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'calendar',
+        },
+        {
+          label: 'Get a Quote',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          icon: 'contact',
+        },
+      ],
+    },
+  ];
+
+  function _buildAutoNavButtons(text, widget) {
+    if (!text || typeof text !== 'string') return null;
+    for (let i = 0; i < AUTO_NAV.length; i++) {
+      if (AUTO_NAV[i].keywords.test(text)) {
+        if (widget._lastNavTopic === i) return null;
+        widget._lastNavTopic = i;
+        return Renderers.buttons({ items: AUTO_NAV[i].items }, widget);
+      }
+    }
+    return null;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // SECTION 14 · DEBUG PANEL
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Renders a debug overlay inside the chat panel.
-   * Only active when config.debug === true.
-   */
   const DebugPanel = (() => {
-    /** @type {HTMLElement | null} */
     let _el = null;
     const _entries = [];
     const MAX_ENTRIES = 20;
@@ -2013,18 +1626,13 @@
       lEl.className = 'ttc-dl';
       lEl.textContent = `[${label}] `;
       const vEl = document.createElement('span');
-      vEl.className = `rce-dv ${cls}`;
+      vEl.className = `ttc-dv ${cls}`;
       vEl.textContent = typeof value === 'object' ? JSON.stringify(value) : String(value);
       entry.appendChild(lEl);
       entry.appendChild(vEl);
       return entry;
     }
 
-    /**
-     * Initialize the debug panel inside the shadow root.
-     * @param {ShadowRoot} shadow
-     * @returns {HTMLElement}
-     */
     function mount(shadow) {
       _el = shadow.querySelector('.ttc-debug');
       if (!_el) return null;
@@ -2035,12 +1643,6 @@
       return _el;
     }
 
-    /**
-     * Log an entry to the debug panel.
-     * @param {string} label
-     * @param {*} value
-     * @param {'ok'|'err'|'info'|'ms'} [type]
-     */
     function log(label, value, type = 'info') {
       if (!_el) return;
       const cls = type === 'ok' ? 'ttc-d-ok' : type === 'err' ? 'ttc-d-err' : type === 'ms' ? 'ttc-d-ms' : 'ttc-d-info';
@@ -2063,46 +1665,20 @@
   // SECTION 15 · CHAT WIDGET (Main Controller)
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * The main ChatWidget class.
-   * Manages the Shadow DOM, conversation state, and all user interactions.
-   */
   class ChatWidget {
-    /**
-     * @param {Object} config  Merged configuration object
-     */
     constructor(config) {
-      /** @type {Object} Current resolved configuration */
       this._config = config;
-
-      /** @type {string} Unique session identifier */
       this._sessionId = this._resolveSessionId();
-
-      /** @type {Object[]} Conversation messages */
       this._messages = [];
-
-      /** @type {boolean} Whether the panel is open */
       this._open = false;
-
-      /** @type {boolean} Whether the widget is visible */
       this._visible = true;
-
-      /** @type {boolean} Whether a webhook request is in flight */
       this._loading = false;
-
-      /** @type {boolean} Whether handoff mode is active */
       this._handoff = false;
-
-      /** @type {number} Unread message count */
+      this._lastNavTopic = -1;
       this._unread = 0;
-
-      /** @type {HTMLElement} Host element appended to <body> */
       this._host = null;
-
-      /** @type {ShadowRoot} */
       this._shadow = null;
 
-      // Cached DOM references (populated in _buildDOM)
       this._panel = null;
       this._launcher = null;
       this._badge = null;
@@ -2117,10 +1693,13 @@
       this._boundResize = debounce(this._onResize.bind(this), 150);
     }
 
-    // ── Initialise ─────────────────────────────────────────────────────────────
-
-    /** Mount the widget into the page. */
     mount() {
+      const stale = document.getElementById('ttc-widget-root');
+      if (stale) {
+        console.warn('[TayTravelsChatbot] Found an existing #ttc-widget-root — removing it before mounting.');
+        stale.remove();
+      }
+
       this._host = document.createElement('div');
       this._host.id = 'ttc-widget-root';
       this._host.setAttribute('aria-label', 'Chat widget');
@@ -2158,8 +1737,6 @@
       });
     }
 
-    // ── Session ────────────────────────────────────────────────────────────────
-
     _resolveSessionId() {
       const stored = Storage.get('session');
       if (stored && stored.id && stored.ts) {
@@ -2180,8 +1757,11 @@
       if (age > this._config.sessionMaxAge) return;
 
       this._visitorInfo = Storage.get('visitor') || null;
+      this._messages = stored.slice();
       stored.forEach((msg) => this._rehydrateMessage(msg));
-      this._messages = stored;
+      if (this._handoff) {
+        this._setInputDisabled(true, 'Connected to a live agent. Conversation continues here.');
+      }
     }
 
     _persistMessages() {
@@ -2192,8 +1772,6 @@
       }
     }
 
-    // ── DOM Construction ───────────────────────────────────────────────────────
-
     _injectStyles() {
       const style = document.createElement('style');
       style.textContent = SHADOW_CSS;
@@ -2203,9 +1781,8 @@
     _buildDOM() {
       const posClass = this._config.position === 'bottom-left' ? 'pos-left' : '';
 
-      // ── Launcher button ──
       this._launcher = document.createElement('button');
-      this._launcher.className = `rce-launcher ${posClass}`;
+      this._launcher.className = `ttc-launcher ${posClass}`;
       this._launcher.setAttribute('aria-label', `Open ${this._config.assistantName} chat`);
       this._launcher.setAttribute('aria-haspopup', 'dialog');
       this._launcher.setAttribute('aria-expanded', 'false');
@@ -2213,10 +1790,10 @@
       this._chatIcon = svgEl(Icons.chat);
       this._chatIcon.setAttribute('class', 'ttc-launcher-icon');
       this._closeIcon = svgEl(Icons.close);
-      this._closeIcon.setAttribute('class', 'ttc-launcher-icon rce-hidden');
+      this._closeIcon.setAttribute('class', 'ttc-launcher-icon ttc-hidden');
 
       this._badge = document.createElement('span');
-      this._badge.className = 'ttc-badge rce-hidden';
+      this._badge.className = 'ttc-badge ttc-hidden';
       this._badge.setAttribute('aria-label', '0 unread messages');
 
       this._launcher.appendChild(this._chatIcon);
@@ -2224,16 +1801,14 @@
       this._launcher.appendChild(this._badge);
       this._shadow.appendChild(this._launcher);
 
-      // ── Chat panel ──
       this._panel = document.createElement('div');
-      this._panel.className = `rce-panel ${posClass}`;
+      this._panel.className = `ttc-panel ${posClass}`;
       this._panel.setAttribute('role', 'dialog');
       this._panel.setAttribute('aria-modal', 'true');
       this._panel.setAttribute('aria-label', `${this._config.assistantName} – ${this._config.agencyName}`);
 
       this._panel.appendChild(this._buildHeader());
 
-      // Messages
       this._msgs = document.createElement('div');
       this._msgs.className = 'ttc-msgs';
       this._msgs.setAttribute('role', 'log');
@@ -2241,7 +1816,6 @@
       this._msgs.setAttribute('aria-label', 'Conversation');
       this._panel.appendChild(this._msgs);
 
-      // Business hours notice
       if (!BusinessHours.isOpen(this._config.businessHours)) {
         const notice = document.createElement('div');
         notice.className = 'ttc-hours-notice';
@@ -2251,7 +1825,6 @@
 
       this._panel.appendChild(this._buildInputArea());
 
-      // Debug panel (only if debug: true)
       if (this._config.debug) {
         const debugEl = document.createElement('div');
         debugEl.className = 'ttc-debug';
@@ -2265,7 +1838,6 @@
       const header = document.createElement('header');
       header.className = 'ttc-header';
 
-      // Avatar
       const avatar = document.createElement('div');
       avatar.className = 'ttc-avatar';
       if (this._config.avatar) {
@@ -2278,7 +1850,6 @@
       }
       header.appendChild(avatar);
 
-      // Info
       const info = document.createElement('div');
       info.className = 'ttc-header-info';
 
@@ -2300,7 +1871,6 @@
       info.appendChild(status);
       header.appendChild(info);
 
-      // Header action buttons
       const actions = document.createElement('div');
       actions.className = 'ttc-header-actions';
 
@@ -2369,8 +1939,6 @@
       return area;
     }
 
-    // ── Theme & Styling ────────────────────────────────────────────────────────
-
     _applyTheme() {
       const { primary, accent, mode = 'auto' } = this._config.theme;
       const host = this._shadow.host;
@@ -2393,7 +1961,6 @@
         if (rgb) {
           this._shadow.host.style.setProperty('--rce-primary', primary);
           this._shadow.host.style.setProperty('--rce-primary-rgb', `${rgb.r},${rgb.g},${rgb.b}`);
-          // Derive user bubble — in dark mode: accent; in light: primary
           this._shadow.host.style.setProperty('--rce-user-bg', primary);
           this._shadow.host.style.setProperty('--rce-user-color', isLightColor(primary) ? '#0f172a' : '#ffffff');
         }
@@ -2408,16 +1975,11 @@
       }
     }
 
-    // ── Event Binding ──────────────────────────────────────────────────────────
-
     _bindEvents() {
-      // Launcher click
       this._launcher.addEventListener('click', () => this._open ? this.close() : this.open());
 
-      // Send on button click
       this._sendBtn.addEventListener('click', () => this._submitMessage());
 
-      // Send on Enter (Shift+Enter = new line)
       this._textarea.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
@@ -2425,14 +1987,12 @@
         }
       });
 
-      // Auto-resize textarea
       this._textarea.addEventListener('input', () => {
         this._textarea.style.height = 'auto';
         this._textarea.style.height = Math.min(this._textarea.scrollHeight, 120) + 'px';
         this._updateCharCount();
       });
 
-      // Global keyboard: Escape = close
       document.addEventListener('keydown', this._boundKeyDown);
       window.addEventListener('resize', this._boundResize);
     }
@@ -2455,8 +2015,6 @@
       }
     }
 
-    // ── Open / Close ───────────────────────────────────────────────────────────
-
     open() {
       this._open = true;
       this._panel.classList.add('ttc-open');
@@ -2466,7 +2024,6 @@
       this._launcher.setAttribute('aria-label', 'Close chat');
       this._clearBadge();
       this._scrollToBottom();
-      // Focus textarea after animation
       setTimeout(() => this._textarea?.focus(), 350);
       EventBus.emit('widget:open');
     }
@@ -2493,7 +2050,6 @@
       if (this._open) this.close();
     }
 
-    /** Remove the widget from the DOM entirely. */
     destroy() {
       document.removeEventListener('keydown', this._boundKeyDown);
       window.removeEventListener('resize', this._boundResize);
@@ -2503,7 +2059,6 @@
       this._host = null;
     }
 
-    /** Clear messages and start a new session. */
     restart() {
       this._messages = [];
       this._sessionId = generateUUID();
@@ -2513,14 +2068,13 @@
       this._visitorInfo = null;
       this._handoff = false;
       this._loading = false;
+      this._lastNavTopic = -1;
       this._unread = 0;
       this._setInputDisabled(false);
       this._msgs.innerHTML = '';
       this._sendWelcomeMessage();
       EventBus.emit('widget:restart');
     }
-
-    // ── Message Sending ────────────────────────────────────────────────────────
 
     _submitMessage() {
       const text = this._textarea.value.trim();
@@ -2531,23 +2085,25 @@
       this.sendMessage(text);
     }
 
-    /**
-     * Send a message (programmatically or from user input).
-     * Appends user bubble, shows typing indicator, calls webhook.
-     * @param {string} text
-     * @param {string} [type='text']
-     */
-    async sendMessage(text, type = 'text') {
-      if (!text || this._handoff) return;
+    async _openLeadForm(item = {}) {
+      if (this._handoff) return;
+      await this._renderBotMessage({
+        type: 'lead_form',
+        title: item.formTitle || 'Get Your Free Travel Quote',
+        fields: item.formFields || ['name', 'email', 'phone', 'destination', 'tripType', 'travelDates', 'message'],
+        submitLabel: item.formSubmitLabel || 'Send My Enquiry',
+      });
+      this._persistMessages();
+    }
 
-      // Clear welcome screen if first message
+    async sendMessage(text, type = 'text') {
+      if (!text || this._handoff || this._loading) return;
+
       const welcomeEl = this._msgs.querySelector('.ttc-welcome');
       if (welcomeEl) welcomeEl.remove();
 
-      // Append user bubble
       this._appendMessage({ role: 'user', content: text, ts: Date.now() });
 
-      // Show typing indicator
       this._loading = true;
       this._setInputDisabled(true);
       const typingRow = this._appendTyping();
@@ -2555,7 +2111,7 @@
       const context = Context.collect();
       const payload = {
         chatInput: text,
-        message: text, // Backward compatibility
+        message: text,
         sessionId: this._sessionId,
         messageType: type,
         body: {
@@ -2594,6 +2150,24 @@
           }
         }
 
+        const aiAlreadyActed = messages.some(
+          (m) => m.type === 'buttons' || m.type === 'lead_form' || m.type === 'quick_replies'
+        );
+        if (!this._handoff && !aiAlreadyActed) {
+          const navNode = _buildAutoNavButtons(text, this);
+          if (navNode) {
+            await new Promise((r) => setTimeout(r, 180));
+            const row = document.createElement('div');
+            row.className = 'ttc-row';
+            const body = document.createElement('div');
+            body.className = 'ttc-msg-body';
+            body.appendChild(navNode);
+            row.appendChild(body);
+            this._msgs.appendChild(row);
+            this._scrollToBottom();
+          }
+        }
+
         this._persistMessages();
       } catch (err) {
         typingRow.remove();
@@ -2604,15 +2178,9 @@
       }
     }
 
-    /**
-     * Internal: send to webhook without adding a user message bubble.
-     * Used by lead forms.
-     * @param {Object} extra  Extra fields to merge into the payload
-     */
     async _sendToWebhook(extra = {}) {
       const context = Context.collect();
 
-      // Store visitor info in memory when a lead form is submitted
       if (extra.formData) {
         this._visitorInfo = {
           name: extra.formData.name || null,
@@ -2623,12 +2191,9 @@
 
       const payload = {
         chatInput: extra.content || "",
-        message: extra.content || "", // Backward compatibility
+        message: extra.content || "",
         sessionId: this._sessionId,
         messageType: extra.messageType || "text",
-        // Full, untouched form field values — required so the workflow can
-        // log/email the exact data the visitor typed without needing the
-        // AI to reconstruct it from a text description.
         formData: extra.formData || null,
         body: {
           agencyName: this._config.agencyName,
@@ -2647,17 +2212,12 @@
         }
       };
 
-      const raw = await WebhookClient.send(this._config.webhook, payload);
+      const isLeadSubmit = extra.messageType === 'lead_form_submit';
+      const raw = await WebhookClient.send(this._config.webhook, payload, { retries: isLeadSubmit ? 0 : 1 });
       const { messages } = ResponseParser.parse(raw);
       for (const msg of messages) await this._renderBotMessage(msg);
     }
 
-    // ── Message Rendering ──────────────────────────────────────────────────────
-
-    /**
-     * Render a bot message of any supported type.
-     * @param {Object} msg
-     */
     async _renderBotMessage(msg) {
       const renderer = Renderers[msg.type];
       if (!renderer) {
@@ -2671,7 +2231,6 @@
       const row = document.createElement('div');
       row.className = 'ttc-row';
 
-      // Avatar
       const av = document.createElement('div');
       av.className = 'ttc-msg-av';
       av.setAttribute('aria-hidden', 'true');
@@ -2689,7 +2248,6 @@
       body.className = 'ttc-msg-body';
       body.appendChild(node);
 
-      // Timestamp
       const ts = document.createElement('div');
       ts.className = 'ttc-ts';
       ts.setAttribute('aria-label', `Sent at ${formatTime()}`);
@@ -2706,26 +2264,20 @@
 
       if (!this._open) this._incrementBadge();
 
-      // Trim DOM if too many messages
       this._trimMessages();
 
-      // Small delay between consecutive messages for a natural feel
       await new Promise((r) => setTimeout(r, 120));
     }
 
-    /**
-     * Append a user message bubble.
-     * @param {{ role: string, content: string, ts: number }} msg
-     */
-    _appendMessage(msg) {
+    _appendMessage(msg, record = true) {
       const row = document.createElement('div');
-      row.className = 'ttc-row rce-user';
+      row.className = 'ttc-row ttc-user';
 
       const body = document.createElement('div');
       body.className = 'ttc-msg-body';
 
       const bubble = document.createElement('div');
-      bubble.className = 'ttc-bubble rce-user';
+      bubble.className = 'ttc-bubble ttc-user';
       bubble.textContent = msg.content;
 
       const ts = document.createElement('div');
@@ -2744,18 +2296,16 @@
 
       this._msgs.appendChild(row);
       this._scrollToBottom();
-      this._messages.push(msg);
+      if (record) this._messages.push(msg);
       this._trimMessages();
     }
 
-    /**
-     * Re-render a persisted message during session restore.
-     * @param {{ role: string, type?: string, content?: string }} msg
-     */
     _rehydrateMessage(msg) {
       if (msg.role === 'user') {
-        this._appendMessage(msg);
+        this._appendMessage(msg, false);
       } else if (msg.role === 'bot' && msg.type) {
+        if (msg.type === 'lead_form' || msg.type === 'buttons' || msg.type === 'quick_replies') return;
+        if (msg.type === 'handoff') this._handoff = true;
         const renderer = Renderers[msg.type];
         if (!renderer) return;
         const node = renderer(msg, this);
@@ -2784,7 +2334,6 @@
       }
     }
 
-    /** Show the three-dot typing indicator and return the row element. */
     _appendTyping() {
       const row = document.createElement('div');
       row.className = 'ttc-row';
@@ -2858,9 +2407,10 @@
     }
 
     _trimMessages() {
-      const rows = this._msgs.querySelectorAll('.ttc-row');
-      if (rows.length > MAX_MESSAGES_IN_DOM) {
+      let rows = this._msgs.querySelectorAll('.ttc-row');
+      while (rows.length > MAX_MESSAGES_IN_DOM) {
         rows[0].remove();
+        rows = this._msgs.querySelectorAll('.ttc-row');
       }
     }
 
@@ -2882,13 +2432,8 @@
   // SECTION 16 · PUBLIC API
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /** @type {ChatWidget | null} Singleton instance */
   let _instance = null;
 
-  /**
-   * Validate that the widget is initialised before calling API methods.
-   * @param {string} method
-   */
   function _guard(method) {
     if (!_instance) {
       console.warn(`[TayTravelsChatbot] Call .init() before .${method}()`);
@@ -2897,26 +2442,7 @@
     return true;
   }
 
-  /**
-   * @namespace TayTravelsChatbot
-   * @description Public JavaScript API for the Real Estate AI Chatbot Widget.
-   */
   const TayTravelsChatbot = {
-    /**
-     * Initialize and mount the widget.
-     * Must be called before any other methods.
-     *
-     * @param {Object} userConfig  See configuration reference in README.md
-     * @returns {void}
-     *
-     * @example
-     * TayTravelsChatbot.init({
-     *   webhook: 'https://my-n8n.app/webhook/abc',
-     *   agencyName: 'Luxury Homes',
-     *   assistantName: 'Emma',
-     *   theme: { primary: '#081A33', accent: '#D4AF37' },
-     * });
-     */
     init(userConfig = {}) {
       if (_instance) {
         console.warn('[TayTravelsChatbot] Widget already initialised. Call .destroy() first.');
@@ -2932,51 +2458,26 @@
       _instance.mount();
     },
 
-    /**
-     * Open the chat panel.
-     * @returns {void}
-     */
     open() {
       if (_guard('open')) _instance.open();
     },
 
-    /**
-     * Close the chat panel.
-     * @returns {void}
-     */
     close() {
       if (_guard('close')) _instance.close();
     },
 
-    /**
-     * Clear conversation history and restart the session.
-     * @returns {void}
-     */
     restart() {
       if (_guard('restart')) _instance.restart();
     },
 
-    /**
-     * Show the launcher button (if previously hidden).
-     * @returns {void}
-     */
     show() {
       if (_guard('show')) _instance.show();
     },
 
-    /**
-     * Hide the launcher button and close the panel.
-     * @returns {void}
-     */
     hide() {
       if (_guard('hide')) _instance.hide();
     },
 
-    /**
-     * Completely remove the widget from the DOM.
-     * After calling this, you must call .init() again to re-mount.
-     * @returns {void}
-     */
     destroy() {
       if (_guard('destroy')) {
         _instance.destroy();
@@ -2984,11 +2485,6 @@
       }
     },
 
-    /**
-     * Programmatically send a message as if the user typed it.
-     * @param {string} text
-     * @returns {void}
-     */
     sendMessage(text) {
       if (_guard('sendMessage') && text) {
         _instance.open();
@@ -2996,56 +2492,28 @@
       }
     },
 
-    /**
-     * Hot-update configuration values without destroying the widget.
-     * Not all values support hot-updating (e.g. webhook, position).
-     * Useful for: agencyName, assistantName, welcomeMessage, bookingUrl.
-     * @param {Partial<Object>} partial
-     * @returns {void}
-     */
     updateConfig(partial = {}) {
       if (!_guard('updateConfig')) return;
       _instance._config = deepMerge(_instance._config, partial);
     },
 
-    /**
-     * Hot-swap the visual theme colors.
-     * @param {{ primary?: string, accent?: string, mode?: 'light'|'dark'|'auto' }} theme
-     * @returns {void}
-     */
     setTheme(theme = {}) {
       if (!_guard('setTheme')) return;
       _instance._config.theme = deepMerge(_instance._config.theme, theme);
       _instance._applyTheme();
     },
 
-    /**
-     * Subscribe to widget events.
-     * Available events: 'widget:open', 'widget:close', 'widget:restart',
-     *   'webhook:success', 'webhook:error'
-     * @param {string} event
-     * @param {Function} callback
-     * @returns {void}
-     */
     on(event, callback) {
       EventBus.on(event, callback);
     },
 
-    /**
-     * Unsubscribe from a widget event.
-     * @param {string} event
-     * @param {Function} callback
-     * @returns {void}
-     */
     off(event, callback) {
       EventBus.off(event, callback);
     },
 
-    /** @returns {string} Current widget version */
     get version() { return VERSION; },
   };
 
-  // Expose on window
   window.TayTravelsChatbot = TayTravelsChatbot;
 
 })(window, document);
