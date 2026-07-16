@@ -39,6 +39,7 @@
       'Show me vacation deals',
       "I'd like a cruise recommendation",
       'Help me plan a trip',
+      'Do I need a passport or visa?',
     ],
     bookingUrl: null,
     position: 'bottom-right',
@@ -209,7 +210,10 @@
     clock: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
     users: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
     star: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-    star: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    ship: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 21c1.6 0 2.4-1 4-1s2.4 1 4 1 2.4-1 4-1 2.4 1 4 1 2.4-1 4-1"/><path d="M4 18l-1-6h18l-1 6"/><path d="M12 2v9"/><path d="M9 5h6l3 6H6l3-6z"/></svg>`,
+    shield: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+    idcard: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M4 17c.6-1.6 2-2.5 4-2.5s3.4.9 4 2.5"/><line x1="14" y1="9" x2="19" y2="9"/><line x1="14" y1="13" x2="19" y2="13"/></svg>`,
+    car: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13l1.5-4.5A2 2 0 0 1 6.4 7h11.2a2 2 0 0 1 1.9 1.5L21 13"/><rect x="2" y="13" width="20" height="6" rx="2"/><circle cx="7" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>`,
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -662,7 +666,16 @@
 
           if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
 
-          const data = await res.json();
+          const text = await res.text();
+          if (!text || !text.trim()) {
+            throw new Error('The assistant is thinking — please try again in a moment.');
+          }
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            throw new Error('The assistant returned an unexpected response. Please try again.');
+          }
           EventBus.emit('webhook:success', { payload, response: data, ms: Date.now() - t0 });
           return data;
         } catch (err) {
@@ -991,84 +1004,46 @@
 .ttc-qr.ttc-used{opacity:.5;pointer-events:none}
 
 /* ──────────── BUTTONS ──────────── */
-.ttc-btns{display:flex;flex-direction:column;gap:8px;max-width:280px;margin-top:2px}
+.ttc-btns{display:flex;flex-direction:column;gap:9px;width:100%;max-width:300px;margin-top:4px}
 .ttc-btn{
-  padding:10px 18px;border-radius:10px;border:none;
-  font-family:var(--rce-font);font-size:13px;font-weight:600;
-  cursor:pointer;transition:all .2s;text-align:center;text-decoration:none;
-  display:flex;align-items:center;justify-content:center;gap:8px;outline:none;
+  width:100%;padding:13px 14px;border-radius:12px;border:1.5px solid var(--rce-border);
+  font-family:var(--rce-font);font-size:13.5px;font-weight:600;
+  cursor:pointer;transition:all .22s ease;text-align:left;text-decoration:none;
+  display:flex;align-items:center;gap:10px;outline:none;
+  background:var(--rce-bg);color:var(--rce-text);
+  box-shadow:0 2px 8px rgba(var(--rce-primary-rgb),.05);
 }
+.ttc-btn-nav-icon{
+  width:36px;height:36px;border-radius:9px;flex-shrink:0;
+  background:rgba(var(--rce-primary-rgb),.08);
+  display:flex;align-items:center;justify-content:center;
+  transition:background .22s;
+}
+.ttc-btn-nav-icon svg{width:17px;height:17px;color:var(--rce-primary)}
+.ttc-btn-nav-label{flex:1;min-width:0}
+.ttc-btn-nav-label strong{display:block;font-size:13.5px;color:var(--rce-text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttc-btn-nav-label span{display:block;font-size:11px;font-weight:400;color:var(--rce-text2);margin-top:1px}
+.ttc-btn-nav-arrow{flex-shrink:0;color:var(--rce-muted);transition:transform .2s,color .2s}
+.ttc-btn-nav-arrow svg{width:14px;height:14px;display:block}
+.ttc-btn:hover{background:rgba(var(--rce-primary-rgb),.04);border-color:rgba(var(--rce-primary-rgb),.35);transform:translateX(2px)}
+.ttc-btn:hover .ttc-btn-nav-arrow{transform:translateX(3px);color:var(--rce-primary)}
+.ttc-btn:hover .ttc-btn-nav-icon{background:rgba(var(--rce-primary-rgb),.14)}
 .ttc-btn-accent{
-  background:linear-gradient(135deg,var(--rce-accent),rgba(var(--rce-accent-rgb),.8));
-  color:var(--rce-primary);box-shadow:0 4px 14px rgba(var(--rce-accent-rgb),.3);
+  background:linear-gradient(135deg,var(--rce-primary),rgba(var(--rce-primary-rgb),.85));
+  color:#fff;border-color:transparent;
+  box-shadow:0 4px 16px rgba(var(--rce-primary-rgb),.3);
 }
-.ttc-btn-accent:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(var(--rce-accent-rgb),.4)}
-.ttc-btn-outline{background:transparent;border:1.5px solid var(--rce-accent);color:var(--rce-text)}
-.ttc-btn-outline:hover{background:rgba(var(--rce-accent-rgb),.08);transform:translateY(-1px)}
+.ttc-btn-accent .ttc-btn-nav-icon{background:rgba(255,255,255,.18)}
+.ttc-btn-accent .ttc-btn-nav-icon svg{color:#fff}
+.ttc-btn-accent .ttc-btn-nav-label strong{color:#fff}
+.ttc-btn-accent .ttc-btn-nav-label span{color:rgba(255,255,255,.72)}
+.ttc-btn-accent .ttc-btn-nav-arrow{color:rgba(255,255,255,.55)}
+.ttc-btn-accent:hover{transform:translateX(2px);box-shadow:0 7px 22px rgba(var(--rce-primary-rgb),.42);border-color:transparent}
+.ttc-btn-accent:hover .ttc-btn-nav-icon{background:rgba(255,255,255,.26)}
+.ttc-btn-accent:hover .ttc-btn-nav-arrow{color:rgba(255,255,255,.95);transform:translateX(3px)}
 .ttc-btn:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
-.ttc-btn:active{transform:scale(.97)!important}
+.ttc-btn:active{transform:scale(.98)!important}
 .ttc-btn svg{width:15px;height:15px;flex-shrink:0}
-
-/* ──────────── PROPERTY CARD ──────────── */
-.ttc-card{
-  background:var(--rce-card-bg);border-radius:14px;
-  border:1px solid var(--rce-border);overflow:hidden;
-  width:280px;flex-shrink:0;
-  box-shadow:var(--rce-shadow-sm);transition:transform .2s,box-shadow .2s;
-}
-.ttc-card:hover{transform:translateY(-3px);box-shadow:var(--rce-shadow)}
-
-.ttc-card-img-wrap{position:relative;overflow:hidden}
-.ttc-card-img{width:100%;height:165px;object-fit:cover;display:block;transition:transform .4s ease}
-.ttc-card:hover .ttc-card-img{transform:scale(1.04)}
-.ttc-card-img-placeholder{
-  width:100%;height:165px;
-  background:linear-gradient(145deg,rgba(var(--rce-primary-rgb),.85),rgba(var(--rce-primary-rgb),.55));
-  display:flex;align-items:center;justify-content:center;color:rgba(var(--rce-accent-rgb),.55);
-}
-.ttc-card-img-placeholder svg{width:52px;height:52px}
-
-.ttc-card-badges{position:absolute;top:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap}
-.ttc-cbadge{
-  padding:3px 10px;border-radius:20px;
-  font-family:var(--rce-font);font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
-}
-.ttc-cbadge-sale{background:var(--rce-accent);color:var(--rce-primary)}
-.ttc-cbadge-rent{background:#3b82f6;color:#fff}
-.ttc-cbadge-sold{background:#ef4444;color:#fff}
-.ttc-cbadge-type{background:rgba(var(--rce-primary-rgb),.75);color:#fff;backdrop-filter:blur(4px)}
-
-.ttc-card-body{padding:14px}
-.ttc-card-price{
-  font-family:var(--rce-font);font-size:21px;font-weight:800;
-  color:var(--rce-accent);letter-spacing:-.5px;margin-bottom:3px;
-}
-.ttc-card-title{
-  font-family:var(--rce-font);font-size:13.5px;font-weight:600;color:var(--rce-text);
-  margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.ttc-card-addr{
-  font-family:var(--rce-font);font-size:12px;color:var(--rce-text2);
-  margin-bottom:10px;display:flex;align-items:center;gap:4px;
-}
-.ttc-card-addr svg{width:11px;height:11px;flex-shrink:0;color:var(--rce-accent)}
-
-.ttc-card-stats{display:flex;gap:10px;margin-bottom:11px;flex-wrap:wrap}
-.ttc-stat{display:flex;align-items:center;gap:3px;font-family:var(--rce-font);font-size:12px;color:var(--rce-text2)}
-.ttc-stat svg{width:12px;height:12px;color:var(--rce-accent);flex-shrink:0}
-
-.ttc-card-desc{
-  font-family:var(--rce-font);font-size:12px;color:var(--rce-text2);line-height:1.5;
-  margin-bottom:12px;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-}
-.ttc-card-actions{display:flex;gap:8px}
-.ttc-card-actions .ttc-btn{flex:1;font-size:12px;padding:8px 10px;border-radius:9px}
-
-/* Card carousel */
-.ttc-carousel{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;max-width:100%}
-.ttc-carousel::-webkit-scrollbar{height:3px}
-.ttc-carousel::-webkit-scrollbar-thumb{background:var(--rce-accent);border-radius:2px}
 
 /* ──────────── LEAD FORM ──────────── */
 .ttc-form{
@@ -1248,7 +1223,7 @@
      */
     text(msg) {
       const el = document.createElement('div');
-      el.className = 'ttc-bubble rce-bot';
+      el.className = 'ttc-bubble ttc-bot';
       el.textContent = msg.content || '';
       return el;
     },
@@ -1258,7 +1233,7 @@
      */
     markdown(msg) {
       const el = document.createElement('div');
-      el.className = 'ttc-bubble rce-bot';
+      el.className = 'ttc-bubble ttc-bot';
       el.innerHTML = MarkdownParser.parse(msg.content || '');
       return el;
     },
@@ -1291,99 +1266,84 @@
     },
 
     /**
-     * Styled CTA button group.
+     * Navigation button group — guides visitors to sections of the site.
+     * Each item may have: label, value, url, subtitle, icon (keyword).
      */
     buttons(msg, widget) {
       const items = Array.isArray(msg.items) ? msg.items : [];
       if (!items.length) return null;
+
+      /** Pick an SVG icon string based on the button label/icon keyword */
+      function iconForItem(item) {
+        const key = (item.icon || item.label || item.value || '').toLowerCase();
+        if (/cruise|ship|sail|sea/.test(key))   return Icons.ship;
+        if (/flight|fly|air|plane/.test(key))   return Icons.plane;
+        if (/hotel|stay|resort|room|sleep/.test(key)) return Icons.bed;
+        if (/group|team|party|people|friends/.test(key)) return Icons.users;
+        if (/insur|protect|shield|cover/.test(key)) return Icons.shield;
+        if (/passport|visa|id.?card/.test(key)) return Icons.idcard;
+        if (/ride|car|transfer|taxi|shuttle/.test(key)) return Icons.car;
+        if (/contact|email|reach/.test(key)) return Icons.contact;
+        if (/book|reserve|enquire|quote/.test(key)) return Icons.calendar;
+        if (/location|destination|where|place/.test(key)) return Icons.location;
+        if (/plan|trip|vacation|package/.test(key)) return Icons.calendar;
+        return Icons.arrow;
+      }
 
       const wrap = document.createElement('div');
       wrap.className = 'ttc-btns';
       wrap.setAttribute('role', 'group');
 
       items.forEach((item, i) => {
-        const btn = document.createElement(item.url ? 'a' : 'button');
-        btn.className = `ttc-btn ${i === 0 ? 'ttc-btn-accent' : 'ttc-btn-outline'}`;
+        const tag = item.url ? 'a' : 'button';
+        const btn = document.createElement(tag);
+        btn.className = `ttc-btn${i === 0 ? ' ttc-btn-accent' : ''}`;
 
         if (item.url) {
           btn.href = item.url;
           btn.target = '_blank';
           btn.rel = 'noopener noreferrer';
-          btn.appendChild(svgEl(Icons.externalLink));
         }
 
-        const label = document.createElement('span');
-        label.textContent = item.label || item.value || '';
-        btn.appendChild(label);
+        // ── Icon box ──
+        const iconBox = document.createElement('div');
+        iconBox.className = 'ttc-btn-nav-icon';
+        iconBox.appendChild(svgEl(iconForItem(item)));
+        btn.appendChild(iconBox);
+
+        // ── Label + optional sublabel ──
+        const labelWrap = document.createElement('div');
+        labelWrap.className = 'ttc-btn-nav-label';
+        const strong = document.createElement('strong');
+        strong.textContent = item.label || item.value || '';
+        labelWrap.appendChild(strong);
+        if (item.subtitle) {
+          const sub = document.createElement('span');
+          sub.textContent = item.subtitle;
+          labelWrap.appendChild(sub);
+        }
+        btn.appendChild(labelWrap);
+
+        // ── Chevron arrow ──
+        const arrow = document.createElement('div');
+        arrow.className = 'ttc-btn-nav-arrow';
+        arrow.appendChild(svgEl(Icons.arrow));
+        btn.appendChild(arrow);
 
         if (!item.url) {
-          btn.addEventListener('click', () => widget.sendMessage(item.value || item.label));
+          btn.addEventListener('click', () => {
+            if (item.formTrigger) {
+              widget._openLeadForm(item);
+            } else {
+              widget.sendMessage(item.value || item.label);
+            }
+          });
         }
 
         wrap.appendChild(btn);
       });
 
       return wrap;
-    },
-
-    /**
-     * Single property card.
-     */
-    property_card(msg, widget) {
-      return _buildPropertyCard(msg.property || msg, widget);
-    },
-
-    /**
-     * Horizontally scrollable carousel of property cards.
-     */
-    property_cards(msg, widget) {
-      const props = Array.isArray(msg.properties) ? msg.properties : [];
-      if (!props.length) return null;
-
-      const carousel = document.createElement('div');
-      carousel.className = 'ttc-carousel';
-      carousel.setAttribute('role', 'list');
-      carousel.setAttribute('aria-label', 'Property listings');
-
-      props.forEach((p) => {
-        const card = _buildPropertyCard(p, widget);
-        if (card) {
-          card.setAttribute('role', 'listitem');
-          carousel.appendChild(card);
-        }
-      });
-
-      return carousel;
-    },
-
-    /**
-     * Single trip / package card.
-     */
-    trip_card(msg, widget) {
-      return _buildTripCard(msg.trip || msg, widget);
-    },
-
-    /**
-     * Horizontally scrollable carousel of trip cards.
-     */
-    trip_cards(msg, widget) {
-      const trips = Array.isArray(msg.trips) ? msg.trips : [];
-      if (!trips.length) return null;
-
-      const carousel = document.createElement('div');
-      carousel.className = 'ttc-carousel';
-      carousel.setAttribute('role', 'list');
-      carousel.setAttribute('aria-label', 'Trip recommendations');
-
-      trips.forEach((t) => {
-        const card = _buildTripCard(t, widget);
-        if (card) {
-          card.setAttribute('role', 'listitem');
-          carousel.appendChild(card);
-        }
-      });
-
-      return carousel;
     },
 
     /**
@@ -1466,347 +1426,7 @@
     },
   };
 
-  /**
-   * Build a luxury property card DOM node from a property data object.
-   * @param {Object} p  Property data
-   * @param {ChatWidget} widget
-   * @returns {HTMLElement}
-   */
-  function _buildPropertyCard(p, widget) {
-    if (!p) return null;
 
-    const card = document.createElement('article');
-    card.className = 'ttc-card';
-
-    // ── Image area ──
-    const imgWrap = document.createElement('div');
-    imgWrap.className = 'ttc-card-img-wrap';
-
-    if (p.image) {
-      const img = document.createElement('img');
-      img.className = 'ttc-card-img';
-      img.alt = p.title || 'Property image';
-      img.loading = 'lazy';
-      // Use IntersectionObserver for lazy loading
-      img.dataset.src = p.image;
-      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // 1px placeholder
-      _lazyLoad(img);
-      imgWrap.appendChild(img);
-    } else {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'ttc-card-img-placeholder';
-      placeholder.appendChild(svgEl(Icons.home));
-      imgWrap.appendChild(placeholder);
-    }
-
-    // Status / type badges
-    const badges = document.createElement('div');
-    badges.className = 'ttc-card-badges';
-
-    if (p.status) {
-      const badge = document.createElement('span');
-      const statusLower = p.status.toLowerCase().replace(/\s+/g, '-');
-      const cls = statusLower.includes('sale') ? 'ttc-cbadge-sale'
-        : statusLower.includes('rent') ? 'ttc-cbadge-rent'
-        : statusLower.includes('sold') ? 'ttc-cbadge-sold'
-        : 'ttc-cbadge-type';
-      badge.className = `ttc-cbadge ${cls}`;
-      badge.textContent = p.status;
-      badges.appendChild(badge);
-    }
-
-    if (p.type) {
-      const typeBadge = document.createElement('span');
-      typeBadge.className = 'ttc-cbadge ttc-cbadge-type';
-      typeBadge.textContent = p.type;
-      badges.appendChild(typeBadge);
-    }
-
-    if (badges.children.length) imgWrap.appendChild(badges);
-    card.appendChild(imgWrap);
-
-    // ── Body ──
-    const body = document.createElement('div');
-    body.className = 'ttc-card-body';
-
-    // Price
-    if (p.price !== undefined && p.price !== null) {
-      const price = document.createElement('div');
-      price.className = 'ttc-card-price';
-      const numPrice = parseFloat(String(p.price).replace(/[^0-9.]/g, ''));
-      price.textContent = isNaN(numPrice)
-        ? String(p.price)
-        : formatCurrency(numPrice, p.currency || 'USD', widget._config.locale);
-      body.appendChild(price);
-    }
-
-    // Title
-    if (p.title) {
-      const title = document.createElement('div');
-      title.className = 'ttc-card-title';
-      title.textContent = p.title;
-      title.title = p.title;
-      body.appendChild(title);
-    }
-
-    // Address
-    if (p.address) {
-      const addr = document.createElement('div');
-      addr.className = 'ttc-card-addr';
-      addr.appendChild(svgEl(Icons.location));
-      const addrText = document.createElement('span');
-      addrText.textContent = p.address;
-      addr.appendChild(addrText);
-      body.appendChild(addr);
-    }
-
-    // Stats row
-    const stats = [];
-    if (p.bedrooms != null) stats.push({ icon: Icons.bed, val: `${p.bedrooms} Bed${p.bedrooms !== 1 ? 's' : ''}` });
-    if (p.bathrooms != null) stats.push({ icon: Icons.bath, val: `${p.bathrooms} Bath${p.bathrooms !== 1 ? 's' : ''}` });
-    if (p.garage != null) stats.push({ icon: Icons.garage, val: `${p.garage} Car` });
-    if (p.sqft != null) stats.push({ icon: Icons.sqft, val: `${Number(p.sqft).toLocaleString()} ft²` });
-
-    if (stats.length) {
-      const statsRow = document.createElement('div');
-      statsRow.className = 'ttc-card-stats';
-      stats.forEach((s) => {
-        const stat = document.createElement('div');
-        stat.className = 'ttc-stat';
-        stat.appendChild(svgEl(s.icon));
-        const v = document.createElement('span');
-        v.textContent = s.val;
-        stat.appendChild(v);
-        statsRow.appendChild(stat);
-      });
-      body.appendChild(statsRow);
-    }
-
-    // Description
-    if (p.description) {
-      const desc = document.createElement('div');
-      desc.className = 'ttc-card-desc';
-      desc.textContent = p.description;
-      body.appendChild(desc);
-    }
-
-    // Action buttons
-    const actions = document.createElement('div');
-    actions.className = 'ttc-card-actions';
-
-    if (p.url) {
-      const viewBtn = document.createElement('a');
-      viewBtn.className = 'ttc-btn ttc-btn-outline';
-      viewBtn.href = p.url;
-      viewBtn.target = '_blank';
-      viewBtn.rel = 'noopener noreferrer';
-      viewBtn.setAttribute('aria-label', `View property: ${p.title || ''}`);
-      viewBtn.appendChild(svgEl(Icons.eye));
-      const vLbl = document.createElement('span');
-      vLbl.textContent = 'View';
-      viewBtn.appendChild(vLbl);
-      actions.appendChild(viewBtn);
-    }
-
-    if (widget._config.bookingUrl) {
-      const bookBtn = document.createElement('a');
-      bookBtn.className = 'ttc-btn ttc-btn-accent';
-      bookBtn.href = widget._config.bookingUrl;
-      bookBtn.target = '_blank';
-      bookBtn.rel = 'noopener noreferrer';
-      bookBtn.setAttribute('aria-label', `Schedule viewing for: ${p.title || 'property'}`);
-      bookBtn.appendChild(svgEl(Icons.calendar));
-      const bLbl = document.createElement('span');
-      bLbl.textContent = 'Book';
-      bookBtn.appendChild(bLbl);
-      actions.appendChild(bookBtn);
-    }
-
-    if (actions.children.length) body.appendChild(actions);
-    card.appendChild(body);
-
-    return card;
-  }
-
-  /**
-   * Build a luxury trip/package card DOM node from a trip data object.
-   * @param {Object} t  Trip data { title, price, location, type, duration,
-   *                     travelers, rating, tag, image, url }
-   * @param {ChatWidget} widget
-   * @returns {HTMLElement}
-   */
-  function _buildTripCard(t, widget) {
-    if (!t) return null;
-
-    const card = document.createElement('article');
-    card.className = 'ttc-card';
-
-    // ── Image area ──
-    const imgWrap = document.createElement('div');
-    imgWrap.className = 'ttc-card-img-wrap';
-
-    if (t.image) {
-      const img = document.createElement('img');
-      img.className = 'ttc-card-img';
-      img.alt = t.title || 'Trip image';
-      img.loading = 'lazy';
-      img.dataset.src = t.image;
-      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-      _lazyLoad(img);
-      imgWrap.appendChild(img);
-    } else {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'ttc-card-img-placeholder';
-      placeholder.appendChild(svgEl(Icons.plane));
-      imgWrap.appendChild(placeholder);
-    }
-
-    // Badges: trip type (Flight/Hotel/Cruise/Package) and a promo tag
-    const badges = document.createElement('div');
-    badges.className = 'ttc-card-badges';
-
-    if (t.type) {
-      const typeBadge = document.createElement('span');
-      typeBadge.className = 'ttc-cbadge ttc-cbadge-type';
-      typeBadge.textContent = t.type;
-      badges.appendChild(typeBadge);
-    }
-
-    if (t.tag) {
-      const tagBadge = document.createElement('span');
-      tagBadge.className = 'ttc-cbadge ttc-cbadge-sale';
-      tagBadge.textContent = t.tag;
-      badges.appendChild(tagBadge);
-    }
-
-    if (badges.children.length) imgWrap.appendChild(badges);
-    card.appendChild(imgWrap);
-
-    // ── Body ──
-    const body = document.createElement('div');
-    body.className = 'ttc-card-body';
-
-    // Price
-    if (t.price !== undefined && t.price !== null) {
-      const price = document.createElement('div');
-      price.className = 'ttc-card-price';
-      const numPrice = parseFloat(String(t.price).replace(/[^0-9.]/g, ''));
-      const priceText = isNaN(numPrice)
-        ? String(t.price)
-        : formatCurrency(numPrice, t.currency || 'USD', widget._config.locale);
-      price.textContent = t.priceUnit ? `${priceText} ${t.priceUnit}` : priceText;
-      body.appendChild(price);
-    }
-
-    // Title
-    if (t.title) {
-      const title = document.createElement('div');
-      title.className = 'ttc-card-title';
-      title.textContent = t.title;
-      title.title = t.title;
-      body.appendChild(title);
-    }
-
-    // Location
-    if (t.location) {
-      const addr = document.createElement('div');
-      addr.className = 'ttc-card-addr';
-      addr.appendChild(svgEl(Icons.location));
-      const addrText = document.createElement('span');
-      addrText.textContent = t.location;
-      addr.appendChild(addrText);
-      body.appendChild(addr);
-    }
-
-    // Stats row: duration, travelers, rating
-    const stats = [];
-    if (t.duration != null) stats.push({ icon: Icons.clock, val: t.duration });
-    if (t.travelers != null) stats.push({ icon: Icons.users, val: `${t.travelers} traveler${t.travelers !== 1 ? 's' : ''}` });
-    if (t.rating != null) stats.push({ icon: Icons.star, val: `${t.rating}` });
-
-    if (stats.length) {
-      const statsRow = document.createElement('div');
-      statsRow.className = 'ttc-card-stats';
-      stats.forEach((s) => {
-        const stat = document.createElement('div');
-        stat.className = 'ttc-stat';
-        stat.appendChild(svgEl(s.icon));
-        const v = document.createElement('span');
-        v.textContent = s.val;
-        stat.appendChild(v);
-        statsRow.appendChild(stat);
-      });
-      body.appendChild(statsRow);
-    }
-
-    // Description
-    if (t.description) {
-      const desc = document.createElement('div');
-      desc.className = 'ttc-card-desc';
-      desc.textContent = t.description;
-      body.appendChild(desc);
-    }
-
-    // Action buttons
-    const actions = document.createElement('div');
-    actions.className = 'ttc-card-actions';
-
-    if (t.url) {
-      const viewBtn = document.createElement('a');
-      viewBtn.className = 'ttc-btn ttc-btn-outline';
-      viewBtn.href = t.url;
-      viewBtn.target = '_blank';
-      viewBtn.rel = 'noopener noreferrer';
-      viewBtn.setAttribute('aria-label', `View trip: ${t.title || ''}`);
-      viewBtn.appendChild(svgEl(Icons.eye));
-      const vLbl = document.createElement('span');
-      vLbl.textContent = 'View';
-      viewBtn.appendChild(vLbl);
-      actions.appendChild(viewBtn);
-    }
-
-    if (widget._config.bookingUrl) {
-      const bookBtn = document.createElement('a');
-      bookBtn.className = 'ttc-btn ttc-btn-accent';
-      bookBtn.href = widget._config.bookingUrl;
-      bookBtn.target = '_blank';
-      bookBtn.rel = 'noopener noreferrer';
-      bookBtn.setAttribute('aria-label', `Enquire about: ${t.title || 'trip'}`);
-      bookBtn.appendChild(svgEl(Icons.calendar));
-      const bLbl = document.createElement('span');
-      bLbl.textContent = 'Enquire';
-      bookBtn.appendChild(bLbl);
-      actions.appendChild(bookBtn);
-    }
-
-    if (actions.children.length) body.appendChild(actions);
-    card.appendChild(body);
-
-    return card;
-  }
-
-  /**
-   * Lazy-load a property card image using IntersectionObserver.
-   * @param {HTMLImageElement} img
-   */
-  function _lazyLoad(img) {
-    if (!('IntersectionObserver' in window)) {
-      img.src = img.dataset.src;
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.src = entry.target.dataset.src;
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { rootMargin: '100px' }
-    );
-    observer.observe(img);
-  }
 
   /**
    * Build a lead capture form DOM node.
@@ -1990,6 +1610,194 @@
     });
 
     return form;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SECTION 13b · AUTO-NAVIGATION — keyword → site buttons
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Maps topic keywords to navigation button sets.
+   * Buttons appear automatically after the bot responds to a matching message.
+   * Only the FIRST matching topic fires (most specific match wins).
+   */
+  const AUTO_NAV = [
+    {
+      keywords: /cruise|ship|sail|caribbean|mediterranean|bahamas|alaska|voyage|royal|carnival|ncl|celebrity|disney cruise/i,
+      items: [
+        {
+          label: 'Browse Cruises',
+          subtitle: 'Caribbean, Mediterranean & more',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'cruise',
+        },
+        {
+          label: 'Get a Cruise Quote',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Your Cruise Quote',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /flight|fly|airline|airfare|ticket|airport|one.way|round.trip|nonstop|layover/i,
+      items: [
+        {
+          label: 'Search Flights',
+          subtitle: 'Best fares to any destination',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'plane',
+        },
+        {
+          label: 'Ask Taje About Flights',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Your Flight Quote',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /hotel|stay|resort|room|accommodation|airbnb|lodge|inn|suite|villa|all.inclusive/i,
+      items: [
+        {
+          label: 'Browse Hotels & Stays',
+          subtitle: 'Resorts, villas & curated stays',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'bed',
+        },
+        {
+          label: 'Ask Taje About Stays',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Your Stay Recommendation',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /group|party|reunion|corporate|team|friends|wedding|honeymoon|bachelorette|birthday|family trip|church|sorority|fraternity/i,
+      items: [
+        {
+          label: 'Plan a Group Vacation',
+          subtitle: 'Birthdays, reunions & group getaways',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'group',
+        },
+        {
+          label: 'Contact Taje for Groups',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Your Group Quote',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /insur|protect|cover|policy|cancel|emergency|medical|lost bag|refund/i,
+      items: [
+        {
+          label: 'Travel Insurance',
+          subtitle: 'Peace of mind for every journey',
+          url: 'https://www.etravelprotection.com/allianz/home',
+          icon: 'shield',
+        },
+        {
+          label: 'Why You Need Insurance',
+          subtitle: 'Read Taje\'s guide (PDF)',
+          url: 'https://d3nyn9h0k44yua.cloudfront.net/media/backoffice/us/pdf/WhyPurchaseInsurance.pdf',
+          icon: 'externalLink',
+        },
+      ],
+    },
+    {
+      keywords: /activity|activities|excursion|tour|experience|things to do|adventure|event/i,
+      items: [
+        {
+          label: 'Browse Activities & Tours',
+          subtitle: 'Excursions & local experiences',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'calendar',
+        },
+        {
+          label: 'Ask Taje',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Activity Recommendations',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /ride|car service|airport pickup|airport transfer|shuttle|taxi|car rental|private driver/i,
+      items: [
+        {
+          label: 'Browse Rides',
+          subtitle: 'Airport transfers & private cars',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'ride',
+        },
+        {
+          label: 'Ask Taje About Rides',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Your Ride Quote',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /passport|visa|entry requirement|documentation needed|travel document/i,
+      items: [
+        {
+          label: 'Passports & Visas',
+          subtitle: '40% off service fees via CIBT',
+          url: 'https://cibtvisas.com/?login=inteletravel',
+          icon: 'idcard',
+        },
+        {
+          label: 'Ask Taje',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          formTitle: 'Get Help With Your Documents',
+          icon: 'contact',
+        },
+      ],
+    },
+    {
+      keywords: /book|reserve|enquire|contact|quote|plan|help|vacation|trip|package|deal|where.*go|going.*to|travel/i,
+      items: [
+        {
+          label: 'Book with Taje',
+          subtitle: 'Start planning your dream trip',
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'calendar',
+        },
+        {
+          label: 'Get a Quote',
+          subtitle: 'Fill out a quick form',
+          formTrigger: true,
+          icon: 'contact',
+        },
+      ],
+    },
+  ];
+
+  /**
+   * Match a user message against AUTO_NAV and return DOM button node or null.
+   * @param {string} text  The user's raw message
+   * @param {ChatWidget} widget
+   * @returns {Node|null}
+   */
+  function _buildAutoNavButtons(text, widget) {
+    if (!text || typeof text !== 'string') return null;
+    for (const rule of AUTO_NAV) {
+      if (rule.keywords.test(text)) {
+        return Renderers.buttons({ items: rule.items }, widget);
+      }
+    }
+    return null;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -2532,6 +2340,24 @@
     }
 
     /**
+     * Open the lead capture form directly in the chat, without a webhook
+     * round-trip. Used by "formTrigger" buttons (e.g. replacing a mailto
+     * link so visitors fill out a quote form instead of leaving the page).
+     * @param {Object} [item] The button item that triggered this, may carry
+     *   optional formTitle / formFields / formSubmitLabel overrides.
+     */
+    async _openLeadForm(item = {}) {
+      if (this._handoff) return;
+      await this._renderBotMessage({
+        type: 'lead_form',
+        title: item.formTitle || 'Get Your Free Travel Quote',
+        fields: item.formFields || ['name', 'email', 'phone', 'destination', 'tripType', 'travelDates', 'message'],
+        submitLabel: item.formSubmitLabel || 'Send My Enquiry',
+      });
+      this._persistMessages();
+    }
+
+    /**
      * Send a message (programmatically or from user input).
      * Appends user bubble, shows typing indicator, calls webhook.
      * @param {string} text
@@ -2591,6 +2417,22 @@
           if (msg.type === 'handoff') {
             this._handoff = true;
             this._setInputDisabled(true, 'Connected to a live agent. Conversation continues here.');
+          }
+        }
+
+        // Auto-inject navigation buttons based on what the user asked
+        if (!this._handoff) {
+          const navNode = _buildAutoNavButtons(text, this);
+          if (navNode) {
+            await new Promise((r) => setTimeout(r, 180));
+            const row = document.createElement('div');
+            row.className = 'ttc-row';
+            const body = document.createElement('div');
+            body.className = 'ttc-msg-body';
+            body.appendChild(navNode);
+            row.appendChild(body);
+            this._msgs.appendChild(row);
+            this._scrollToBottom();
           }
         }
 
@@ -2719,13 +2561,13 @@
      */
     _appendMessage(msg) {
       const row = document.createElement('div');
-      row.className = 'ttc-row rce-user';
+      row.className = 'ttc-row ttc-user';
 
       const body = document.createElement('div');
       body.className = 'ttc-msg-body';
 
       const bubble = document.createElement('div');
-      bubble.className = 'ttc-bubble rce-user';
+      bubble.className = 'ttc-bubble ttc-user';
       bubble.textContent = msg.content;
 
       const ts = document.createElement('div');
