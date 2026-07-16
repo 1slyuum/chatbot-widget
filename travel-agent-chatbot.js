@@ -24,7 +24,7 @@
 
   /** @type {ChatConfig} Default configuration */
   const DEFAULTS = {
-    webhook:'https://islempharm.app.n8n.cloud/webhook/travel-chatbot/chat',
+    webhook:'https://islempharm.app.n8n.cloud/webhook/travel-chatbot',
     agencyName: 'Travel Advisor',
     assistantName: 'Alex',
     logo: null,
@@ -2824,7 +2824,7 @@
         img.alt = this._config.agencyName;
         logo.appendChild(img);
       } else {
-        logo.appendChild(svgEl(Icons.plane));
+        logo.appendChild(svgEl(Icons.home));
       }
       wrap.appendChild(logo);
 
@@ -2918,17 +2918,17 @@
    */
   function _guard(method) {
     if (!_instance) {
-      console.warn(`[TravelChatbot] Call .init() before .${method}()`);
+      console.warn(`[RealEstateChatbot] Call .init() before .${method}()`);
       return false;
     }
     return true;
   }
 
   /**
-   * @namespace TravelChatbot
+   * @namespace RealEstateChatbot
    * @description Public JavaScript API for the Real Estate AI Chatbot Widget.
    */
-  const TravelChatbot = {
+  const RealEstateChatbot = {
     /**
      * Initialize and mount the widget.
      * Must be called before any other methods.
@@ -2937,20 +2937,20 @@
      * @returns {void}
      *
      * @example
-     * TravelChatbot.init({
-     *   webhook: 'https://my-n8n.app/webhook/travel-chatbot/chat',
-     *   agencyName: 'Travel Advisor',
-     *   assistantName: 'Alex',
-     *   theme: { primary: '#0B3D5C', accent: '#F2A93B' },
+     * RealEstateChatbot.init({
+     *   webhook: 'https://my-n8n.app/webhook/abc',
+     *   agencyName: 'Luxury Homes',
+     *   assistantName: 'Emma',
+     *   theme: { primary: '#081A33', accent: '#D4AF37' },
      * });
      */
     init(userConfig = {}) {
       if (_instance) {
-        console.warn('[TravelChatbot] Widget already initialised. Call .destroy() first.');
+        console.warn('[RealEstateChatbot] Widget already initialised. Call .destroy() first.');
         return;
       }
       if (!userConfig.webhook) {
-        console.error('[TravelChatbot] `webhook` URL is required.');
+        console.error('[RealEstateChatbot] `webhook` URL is required.');
         return;
       }
 
@@ -3073,6 +3073,6 @@
   };
 
   // Expose on window
-  window.TravelChatbot = TravelChatbot;
+  window.RealEstateChatbot = RealEstateChatbot;
 
 })(window, document);
