@@ -1,5 +1,5 @@
 /*
- * Real Estate AI Chatbot Widget v1.0.0
+ * Tay Travels AI Chatbot Widget v1.0.0
  * Host-page anchor styles.
  *
  * This CSS is loaded in the client website header.
@@ -7,7 +7,7 @@
  * to prevent CSS leakage or conflicts with your website's styles.
  */
 
-#rce-widget-root {
+#ttc-widget-root {
   /* Ensure the root element itself does not affect document layout */
   position: static;
   display: block;
