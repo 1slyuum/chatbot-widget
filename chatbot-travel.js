@@ -864,7 +864,7 @@
   font-family:var(--rce-font);font-size:11px;font-weight:700;
   display:flex;align-items:center;justify-content:center;
   padding:0 5px;border:2.5px solid var(--rce-bg,#fff);
-  animation:rce-pop .3s cubic-bezier(.34,1.56,.64,1);
+  animation:ttc-pop .3s cubic-bezier(.34,1.56,.64,1);
 }
 .ttc-badge.ttc-hidden{display:none}
 
@@ -916,7 +916,7 @@
 .ttc-header-info{flex:1;min-width:0}
 .ttc-agent-name{font-family:var(--rce-font);font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ttc-status{display:flex;align-items:center;gap:5px;font-family:var(--rce-font);font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
-.ttc-status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:rce-pulse 2s infinite;flex-shrink:0}
+.ttc-status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:ttc-pulse 2s infinite;flex-shrink:0}
 
 .ttc-header-actions{display:flex;gap:4px}
 .ttc-hbtn{
@@ -1212,8 +1212,8 @@
 /* ──────────── ANIMATIONS ──────────── */
 @keyframes rce-msgIn{from{opacity:0;transform:translateY(10px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes rce-bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-7px);opacity:1}}
-@keyframes rce-pulse{0%,100%{opacity:1}50%{opacity:.45}}
-@keyframes rce-pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes ttc-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes ttc-pop{from{transform:scale(0)}to{transform:scale(1)}}
 @keyframes rce-handoff-pulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--rce-accent-rgb),.45)}50%{box-shadow:0 0 0 12px rgba(var(--rce-accent-rgb),0)}}
 
 /* ──────────── REDIRECT MSG ──────────── */
@@ -1303,7 +1303,7 @@
 
       items.forEach((item, i) => {
         const btn = document.createElement(item.url ? 'a' : 'button');
-        btn.className = `rce-btn ${i === 0 ? 'ttc-btn-accent' : 'ttc-btn-outline'}`;
+        btn.className = `ttc-btn ${i === 0 ? 'ttc-btn-accent' : 'ttc-btn-outline'}`;
 
         if (item.url) {
           btn.href = item.url;
@@ -1434,7 +1434,7 @@
 
       if (msg.url) {
         const a = document.createElement('a');
-        a.className = 'ttc-btn rce-btn-accent';
+        a.className = 'ttc-btn ttc-btn-accent';
         a.href = msg.url;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
@@ -1510,14 +1510,14 @@
         : statusLower.includes('rent') ? 'ttc-cbadge-rent'
         : statusLower.includes('sold') ? 'ttc-cbadge-sold'
         : 'ttc-cbadge-type';
-      badge.className = `rce-cbadge ${cls}`;
+      badge.className = `ttc-cbadge ${cls}`;
       badge.textContent = p.status;
       badges.appendChild(badge);
     }
 
     if (p.type) {
       const typeBadge = document.createElement('span');
-      typeBadge.className = 'ttc-cbadge rce-cbadge-type';
+      typeBadge.className = 'ttc-cbadge ttc-cbadge-type';
       typeBadge.textContent = p.type;
       badges.appendChild(typeBadge);
     }
@@ -1596,7 +1596,7 @@
 
     if (p.url) {
       const viewBtn = document.createElement('a');
-      viewBtn.className = 'ttc-btn rce-btn-outline';
+      viewBtn.className = 'ttc-btn ttc-btn-outline';
       viewBtn.href = p.url;
       viewBtn.target = '_blank';
       viewBtn.rel = 'noopener noreferrer';
@@ -1610,7 +1610,7 @@
 
     if (widget._config.bookingUrl) {
       const bookBtn = document.createElement('a');
-      bookBtn.className = 'ttc-btn rce-btn-accent';
+      bookBtn.className = 'ttc-btn ttc-btn-accent';
       bookBtn.href = widget._config.bookingUrl;
       bookBtn.target = '_blank';
       bookBtn.rel = 'noopener noreferrer';
@@ -1667,14 +1667,14 @@
 
     if (t.type) {
       const typeBadge = document.createElement('span');
-      typeBadge.className = 'ttc-cbadge rce-cbadge-type';
+      typeBadge.className = 'ttc-cbadge ttc-cbadge-type';
       typeBadge.textContent = t.type;
       badges.appendChild(typeBadge);
     }
 
     if (t.tag) {
       const tagBadge = document.createElement('span');
-      tagBadge.className = 'ttc-cbadge rce-cbadge-sale';
+      tagBadge.className = 'ttc-cbadge ttc-cbadge-sale';
       tagBadge.textContent = t.tag;
       badges.appendChild(tagBadge);
     }
@@ -1753,7 +1753,7 @@
 
     if (t.url) {
       const viewBtn = document.createElement('a');
-      viewBtn.className = 'ttc-btn rce-btn-outline';
+      viewBtn.className = 'ttc-btn ttc-btn-outline';
       viewBtn.href = t.url;
       viewBtn.target = '_blank';
       viewBtn.rel = 'noopener noreferrer';
@@ -1767,7 +1767,7 @@
 
     if (widget._config.bookingUrl) {
       const bookBtn = document.createElement('a');
-      bookBtn.className = 'ttc-btn rce-btn-accent';
+      bookBtn.className = 'ttc-btn ttc-btn-accent';
       bookBtn.href = widget._config.bookingUrl;
       bookBtn.target = '_blank';
       bookBtn.rel = 'noopener noreferrer';
@@ -1854,7 +1854,7 @@
       const label = document.createElement('label');
       label.className = 'ttc-label';
       label.textContent = def.label + (def.required ? ' *' : '');
-      const inputId = `rce-field-${f}`;
+      const inputId = `ttc-field-${f}`;
       label.setAttribute('for', inputId);
       fieldWrap.appendChild(label);
 
@@ -1917,7 +1917,7 @@
 
     // Submit button
     const submitBtn = document.createElement('button');
-    submitBtn.className = 'ttc-btn rce-btn-accent';
+    submitBtn.className = 'ttc-btn ttc-btn-accent';
     submitBtn.style.width = '100%';
     submitBtn.style.marginTop = '4px';
     submitBtn.textContent = msg.submitLabel || 'Send Enquiry';
@@ -2013,7 +2013,7 @@
       lEl.className = 'ttc-dl';
       lEl.textContent = `[${label}] `;
       const vEl = document.createElement('span');
-      vEl.className = `rce-dv ${cls}`;
+      vEl.className = `ttc-dv ${cls}`;
       vEl.textContent = typeof value === 'object' ? JSON.stringify(value) : String(value);
       entry.appendChild(lEl);
       entry.appendChild(vEl);
@@ -2205,7 +2205,7 @@
 
       // ── Launcher button ──
       this._launcher = document.createElement('button');
-      this._launcher.className = `rce-launcher ${posClass}`;
+      this._launcher.className = `ttc-launcher ${posClass}`;
       this._launcher.setAttribute('aria-label', `Open ${this._config.assistantName} chat`);
       this._launcher.setAttribute('aria-haspopup', 'dialog');
       this._launcher.setAttribute('aria-expanded', 'false');
@@ -2213,10 +2213,10 @@
       this._chatIcon = svgEl(Icons.chat);
       this._chatIcon.setAttribute('class', 'ttc-launcher-icon');
       this._closeIcon = svgEl(Icons.close);
-      this._closeIcon.setAttribute('class', 'ttc-launcher-icon rce-hidden');
+      this._closeIcon.setAttribute('class', 'ttc-launcher-icon ttc-hidden');
 
       this._badge = document.createElement('span');
-      this._badge.className = 'ttc-badge rce-hidden';
+      this._badge.className = 'ttc-badge ttc-hidden';
       this._badge.setAttribute('aria-label', '0 unread messages');
 
       this._launcher.appendChild(this._chatIcon);
@@ -2226,7 +2226,7 @@
 
       // ── Chat panel ──
       this._panel = document.createElement('div');
-      this._panel.className = `rce-panel ${posClass}`;
+      this._panel.className = `ttc-panel ${posClass}`;
       this._panel.setAttribute('role', 'dialog');
       this._panel.setAttribute('aria-modal', 'true');
       this._panel.setAttribute('aria-label', `${this._config.assistantName} – ${this._config.agencyName}`);
