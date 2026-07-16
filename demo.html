@@ -48,45 +48,7 @@
     </style>
 </head>
 <body>
-
-    <div class="container">
-        <div class="badge">Live Demo</div>
-        <h1>Travel Advisor AI</h1>
-        <p>
-            Welcome to the Travel Advisor AI demo page. This page demonstrates how the chatbot widget 
-            integrates with your website. Look for the chat icon in the bottom right corner to start a conversation!
-        </p>
-        <p>
-            The widget is connected to your n8n workflow at:<br>
-            <code>https://islempharm.app.n8n.cloud/webhook/travel-chatbot</code>
-        </p>
-    </div>
-
-    <!-- Chatbot Widget JavaScript -->
-    <!-- 1. Add the Widget Stylesheet to your <head> -->
-<link rel="stylesheet" href="chatbot-travel_1784207478323.css">
-
-<!-- 2. Add the Widget JavaScript before </body> -->
-<script src="chatbot-travel_1784207478323.js"></script>
-
-<!-- 3. Initialize the Chatbot -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        RealEstateChatbot.init({
-            webhook: 'https://islempharm.app.n8n.cloud/webhook/travel-chatbot',
-            agencyName: 'Travel Advisor',
-            assistantName: 'Alex',
-            theme: {
-                primary: '#0B3D5C',
-                accent: '#F2A93B',
-                mode: 'auto'
-            },
-            welcomeMessage: "Hi! I'm Alex, your Travel Advisor. How can I help you plan your next adventure today?",
-            suggestedQuestions: [
-                'Show me vacation deals',
-                'Recommend a cruise',
-                'Help me plan a trip'
-            ]
+<script src="https://1slyuum.github.io/chatbot-widget/embed.js" async></script>
         } );
     });
 </script>
