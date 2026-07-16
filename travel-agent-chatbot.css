@@ -1,0 +1,20 @@
+/*
+ * Real Estate AI Chatbot Widget v1.0.0
+ * Host-page anchor styles.
+ *
+ * This CSS is loaded in the client website header.
+ * The core widget styles are fully isolated inside the Shadow DOM
+ * to prevent CSS leakage or conflicts with your website's styles.
+ */
+
+#rce-widget-root {
+  /* Ensure the root element itself does not affect document layout */
+  position: static;
+  display: block;
+  width: 0;
+  height: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
