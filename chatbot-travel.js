@@ -1,5 +1,5 @@
 /*!
- * Tay Travels AI Chatbot Widget v1.1.0
+ * Tay Travels AI Chatbot Widget v1.0.0
  * Production-ready AI chatbot for the Tay Travels advisor website.
  * Communicates with any n8n (or compatible) webhook backend.
  *
@@ -14,22 +14,10 @@
   'use strict';
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // GUARD · Prevent double-execution if the script tag is accidentally
-  // included more than once on the page (duplicate embed snippets, a CMS
-  // injecting it on every partial, etc). Without this, every click fires
-  // twice and you get duplicate messages/buttons in the chat.
-  // ─────────────────────────────────────────────────────────────────────────────
-  if (window.TayTravelsChatbot) {
-    console.warn('[TayTravelsChatbot] Script already loaded on this page — skipping duplicate load. ' +
-      'Check your HTML for more than one <script src=".../chatbot-travel.js"> tag.');
-    return;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
   // SECTION 1 · CONSTANTS & DEFAULTS
   // ─────────────────────────────────────────────────────────────────────────────
 
-  const VERSION = '1.1.0';
+  const VERSION = '1.0.0';
   const STORAGE_PREFIX = 'ttc_';
   const MAX_INPUT_LENGTH = 1000;
   const MAX_MESSAGES_IN_DOM = 80;
@@ -51,7 +39,6 @@
       'Show me vacation deals',
       "I'd like a cruise recommendation",
       'Help me plan a trip',
-      'Do I need a passport or visa?',
     ],
     bookingUrl: null,
     position: 'bottom-right',
@@ -222,10 +209,7 @@
     clock: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
     users: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
     star: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-    ship: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 21c1.6 0 2.4-1 4-1s2.4 1 4 1 2.4-1 4-1 2.4 1 4 1 2.4-1 4-1"/><path d="M4 18l-1-6h18l-1 6"/><path d="M12 2v9"/><path d="M9 5h6l3 6H6l3-6z"/></svg>`,
-    shield: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
-    idcard: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M4 17c.6-1.6 2-2.5 4-2.5s3.4.9 4 2.5"/><line x1="14" y1="9" x2="19" y2="9"/><line x1="14" y1="13" x2="19" y2="13"/></svg>`,
-    car: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13l1.5-4.5A2 2 0 0 1 6.4 7h11.2a2 2 0 0 1 1.9 1.5L21 13"/><rect x="2" y="13" width="20" height="6" rx="2"/><circle cx="7" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>`,
+    star: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -656,11 +640,11 @@
      * @param {Object} payload
      * @returns {Promise<Object>}
      */
-    async function send(webhookUrl, payload, { retries = MAX_RETRIES } = {}) {
+    async function send(webhookUrl, payload) {
       const t0 = Date.now();
       let lastErr;
 
-      for (let attempt = 0; attempt <= retries; attempt++) {
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -678,23 +662,14 @@
 
           if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
 
-          const text = await res.text();
-          if (!text || !text.trim()) {
-            throw new Error('The assistant is thinking — please try again in a moment.');
-          }
-          let data;
-          try {
-            data = JSON.parse(text);
-          } catch (_) {
-            throw new Error('The assistant returned an unexpected response. Please try again.');
-          }
+          const data = await res.json();
           EventBus.emit('webhook:success', { payload, response: data, ms: Date.now() - t0 });
           return data;
         } catch (err) {
           clearTimeout(timer);
           lastErr = err;
           if (err.name === 'AbortError') throw new Error('Request timed out. Please try again.');
-          if (attempt < retries) await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+          if (attempt < MAX_RETRIES) await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
         }
       }
 
@@ -889,7 +864,7 @@
   font-family:var(--rce-font);font-size:11px;font-weight:700;
   display:flex;align-items:center;justify-content:center;
   padding:0 5px;border:2.5px solid var(--rce-bg,#fff);
-  animation:ttc-pop .3s cubic-bezier(.34,1.56,.64,1);
+  animation:rce-pop .3s cubic-bezier(.34,1.56,.64,1);
 }
 .ttc-badge.ttc-hidden{display:none}
 
@@ -941,7 +916,7 @@
 .ttc-header-info{flex:1;min-width:0}
 .ttc-agent-name{font-family:var(--rce-font);font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ttc-status{display:flex;align-items:center;gap:5px;font-family:var(--rce-font);font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
-.ttc-status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:ttc-pulse 2s infinite;flex-shrink:0}
+.ttc-status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:rce-pulse 2s infinite;flex-shrink:0}
 
 .ttc-header-actions{display:flex;gap:4px}
 .ttc-hbtn{
@@ -1016,46 +991,84 @@
 .ttc-qr.ttc-used{opacity:.5;pointer-events:none}
 
 /* ──────────── BUTTONS ──────────── */
-.ttc-btns{display:flex;flex-direction:column;gap:9px;width:100%;max-width:300px;margin-top:4px}
+.ttc-btns{display:flex;flex-direction:column;gap:8px;max-width:280px;margin-top:2px}
 .ttc-btn{
-  width:100%;padding:13px 14px;border-radius:12px;border:1.5px solid var(--rce-border);
-  font-family:var(--rce-font);font-size:13.5px;font-weight:600;
-  cursor:pointer;transition:all .22s ease;text-align:left;text-decoration:none;
-  display:flex;align-items:center;gap:10px;outline:none;
-  background:var(--rce-bg);color:var(--rce-text);
-  box-shadow:0 2px 8px rgba(var(--rce-primary-rgb),.05);
+  padding:10px 18px;border-radius:10px;border:none;
+  font-family:var(--rce-font);font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .2s;text-align:center;text-decoration:none;
+  display:flex;align-items:center;justify-content:center;gap:8px;outline:none;
 }
-.ttc-btn-nav-icon{
-  width:36px;height:36px;border-radius:9px;flex-shrink:0;
-  background:rgba(var(--rce-primary-rgb),.08);
-  display:flex;align-items:center;justify-content:center;
-  transition:background .22s;
-}
-.ttc-btn-nav-icon svg{width:17px;height:17px;color:var(--rce-primary)}
-.ttc-btn-nav-label{flex:1;min-width:0}
-.ttc-btn-nav-label strong{display:block;font-size:13.5px;color:var(--rce-text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ttc-btn-nav-label span{display:block;font-size:11px;font-weight:400;color:var(--rce-text2);margin-top:1px}
-.ttc-btn-nav-arrow{flex-shrink:0;color:var(--rce-muted);transition:transform .2s,color .2s}
-.ttc-btn-nav-arrow svg{width:14px;height:14px;display:block}
-.ttc-btn:hover{background:rgba(var(--rce-primary-rgb),.04);border-color:rgba(var(--rce-primary-rgb),.35);transform:translateX(2px)}
-.ttc-btn:hover .ttc-btn-nav-arrow{transform:translateX(3px);color:var(--rce-primary)}
-.ttc-btn:hover .ttc-btn-nav-icon{background:rgba(var(--rce-primary-rgb),.14)}
 .ttc-btn-accent{
-  background:linear-gradient(135deg,var(--rce-primary),rgba(var(--rce-primary-rgb),.85));
-  color:#fff;border-color:transparent;
-  box-shadow:0 4px 16px rgba(var(--rce-primary-rgb),.3);
+  background:linear-gradient(135deg,var(--rce-accent),rgba(var(--rce-accent-rgb),.8));
+  color:var(--rce-primary);box-shadow:0 4px 14px rgba(var(--rce-accent-rgb),.3);
 }
-.ttc-btn-accent .ttc-btn-nav-icon{background:rgba(255,255,255,.18)}
-.ttc-btn-accent .ttc-btn-nav-icon svg{color:#fff}
-.ttc-btn-accent .ttc-btn-nav-label strong{color:#fff}
-.ttc-btn-accent .ttc-btn-nav-label span{color:rgba(255,255,255,.72)}
-.ttc-btn-accent .ttc-btn-nav-arrow{color:rgba(255,255,255,.55)}
-.ttc-btn-accent:hover{transform:translateX(2px);box-shadow:0 7px 22px rgba(var(--rce-primary-rgb),.42);border-color:transparent}
-.ttc-btn-accent:hover .ttc-btn-nav-icon{background:rgba(255,255,255,.26)}
-.ttc-btn-accent:hover .ttc-btn-nav-arrow{color:rgba(255,255,255,.95);transform:translateX(3px)}
+.ttc-btn-accent:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(var(--rce-accent-rgb),.4)}
+.ttc-btn-outline{background:transparent;border:1.5px solid var(--rce-accent);color:var(--rce-text)}
+.ttc-btn-outline:hover{background:rgba(var(--rce-accent-rgb),.08);transform:translateY(-1px)}
 .ttc-btn:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
-.ttc-btn:active{transform:scale(.98)!important}
+.ttc-btn:active{transform:scale(.97)!important}
 .ttc-btn svg{width:15px;height:15px;flex-shrink:0}
+
+/* ──────────── PROPERTY CARD ──────────── */
+.ttc-card{
+  background:var(--rce-card-bg);border-radius:14px;
+  border:1px solid var(--rce-border);overflow:hidden;
+  width:280px;flex-shrink:0;
+  box-shadow:var(--rce-shadow-sm);transition:transform .2s,box-shadow .2s;
+}
+.ttc-card:hover{transform:translateY(-3px);box-shadow:var(--rce-shadow)}
+
+.ttc-card-img-wrap{position:relative;overflow:hidden}
+.ttc-card-img{width:100%;height:165px;object-fit:cover;display:block;transition:transform .4s ease}
+.ttc-card:hover .ttc-card-img{transform:scale(1.04)}
+.ttc-card-img-placeholder{
+  width:100%;height:165px;
+  background:linear-gradient(145deg,rgba(var(--rce-primary-rgb),.85),rgba(var(--rce-primary-rgb),.55));
+  display:flex;align-items:center;justify-content:center;color:rgba(var(--rce-accent-rgb),.55);
+}
+.ttc-card-img-placeholder svg{width:52px;height:52px}
+
+.ttc-card-badges{position:absolute;top:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap}
+.ttc-cbadge{
+  padding:3px 10px;border-radius:20px;
+  font-family:var(--rce-font);font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+}
+.ttc-cbadge-sale{background:var(--rce-accent);color:var(--rce-primary)}
+.ttc-cbadge-rent{background:#3b82f6;color:#fff}
+.ttc-cbadge-sold{background:#ef4444;color:#fff}
+.ttc-cbadge-type{background:rgba(var(--rce-primary-rgb),.75);color:#fff;backdrop-filter:blur(4px)}
+
+.ttc-card-body{padding:14px}
+.ttc-card-price{
+  font-family:var(--rce-font);font-size:21px;font-weight:800;
+  color:var(--rce-accent);letter-spacing:-.5px;margin-bottom:3px;
+}
+.ttc-card-title{
+  font-family:var(--rce-font);font-size:13.5px;font-weight:600;color:var(--rce-text);
+  margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.ttc-card-addr{
+  font-family:var(--rce-font);font-size:12px;color:var(--rce-text2);
+  margin-bottom:10px;display:flex;align-items:center;gap:4px;
+}
+.ttc-card-addr svg{width:11px;height:11px;flex-shrink:0;color:var(--rce-accent)}
+
+.ttc-card-stats{display:flex;gap:10px;margin-bottom:11px;flex-wrap:wrap}
+.ttc-stat{display:flex;align-items:center;gap:3px;font-family:var(--rce-font);font-size:12px;color:var(--rce-text2)}
+.ttc-stat svg{width:12px;height:12px;color:var(--rce-accent);flex-shrink:0}
+
+.ttc-card-desc{
+  font-family:var(--rce-font);font-size:12px;color:var(--rce-text2);line-height:1.5;
+  margin-bottom:12px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.ttc-card-actions{display:flex;gap:8px}
+.ttc-card-actions .ttc-btn{flex:1;font-size:12px;padding:8px 10px;border-radius:9px}
+
+/* Card carousel */
+.ttc-carousel{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;max-width:100%}
+.ttc-carousel::-webkit-scrollbar{height:3px}
+.ttc-carousel::-webkit-scrollbar-thumb{background:var(--rce-accent);border-radius:2px}
 
 /* ──────────── LEAD FORM ──────────── */
 .ttc-form{
@@ -1199,8 +1212,8 @@
 /* ──────────── ANIMATIONS ──────────── */
 @keyframes rce-msgIn{from{opacity:0;transform:translateY(10px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes rce-bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-7px);opacity:1}}
-@keyframes ttc-pulse{0%,100%{opacity:1}50%{opacity:.45}}
-@keyframes ttc-pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes rce-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes rce-pop{from{transform:scale(0)}to{transform:scale(1)}}
 @keyframes rce-handoff-pulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--rce-accent-rgb),.45)}50%{box-shadow:0 0 0 12px rgba(var(--rce-accent-rgb),0)}}
 
 /* ──────────── REDIRECT MSG ──────────── */
@@ -1235,7 +1248,7 @@
      */
     text(msg) {
       const el = document.createElement('div');
-      el.className = 'ttc-bubble ttc-bot';
+      el.className = 'ttc-bubble rce-bot';
       el.textContent = msg.content || '';
       return el;
     },
@@ -1245,7 +1258,7 @@
      */
     markdown(msg) {
       const el = document.createElement('div');
-      el.className = 'ttc-bubble ttc-bot';
+      el.className = 'ttc-bubble rce-bot';
       el.innerHTML = MarkdownParser.parse(msg.content || '');
       return el;
     },
@@ -1278,84 +1291,99 @@
     },
 
     /**
-     * Navigation button group — guides visitors to sections of the site.
-     * Each item may have: label, value, url, subtitle, icon (keyword).
+     * Styled CTA button group.
      */
     buttons(msg, widget) {
       const items = Array.isArray(msg.items) ? msg.items : [];
       if (!items.length) return null;
-
-      /** Pick an SVG icon string based on the button label/icon keyword */
-      function iconForItem(item) {
-        const key = (item.icon || item.label || item.value || '').toLowerCase();
-        if (/cruise|ship|sail|sea/.test(key))   return Icons.ship;
-        if (/flight|fly|air|plane/.test(key))   return Icons.plane;
-        if (/hotel|stay|resort|room|sleep/.test(key)) return Icons.bed;
-        if (/group|team|party|people|friends/.test(key)) return Icons.users;
-        if (/insur|protect|shield|cover/.test(key)) return Icons.shield;
-        if (/passport|visa|id.?card/.test(key)) return Icons.idcard;
-        if (/ride|car|transfer|taxi|shuttle/.test(key)) return Icons.car;
-        if (/contact|email|reach/.test(key)) return Icons.contact;
-        if (/book|reserve|enquire|quote/.test(key)) return Icons.calendar;
-        if (/location|destination|where|place/.test(key)) return Icons.location;
-        if (/plan|trip|vacation|package/.test(key)) return Icons.calendar;
-        return Icons.arrow;
-      }
 
       const wrap = document.createElement('div');
       wrap.className = 'ttc-btns';
       wrap.setAttribute('role', 'group');
 
       items.forEach((item, i) => {
-        const tag = item.url ? 'a' : 'button';
-        const btn = document.createElement(tag);
-        btn.className = `ttc-btn${i === 0 ? ' ttc-btn-accent' : ''}`;
+        const btn = document.createElement(item.url ? 'a' : 'button');
+        btn.className = `rce-btn ${i === 0 ? 'ttc-btn-accent' : 'ttc-btn-outline'}`;
 
         if (item.url) {
           btn.href = item.url;
           btn.target = '_blank';
           btn.rel = 'noopener noreferrer';
+          btn.appendChild(svgEl(Icons.externalLink));
         }
 
-        // ── Icon box ──
-        const iconBox = document.createElement('div');
-        iconBox.className = 'ttc-btn-nav-icon';
-        iconBox.appendChild(svgEl(iconForItem(item)));
-        btn.appendChild(iconBox);
-
-        // ── Label + optional sublabel ──
-        const labelWrap = document.createElement('div');
-        labelWrap.className = 'ttc-btn-nav-label';
-        const strong = document.createElement('strong');
-        strong.textContent = item.label || item.value || '';
-        labelWrap.appendChild(strong);
-        if (item.subtitle) {
-          const sub = document.createElement('span');
-          sub.textContent = item.subtitle;
-          labelWrap.appendChild(sub);
-        }
-        btn.appendChild(labelWrap);
-
-        // ── Chevron arrow ──
-        const arrow = document.createElement('div');
-        arrow.className = 'ttc-btn-nav-arrow';
-        arrow.appendChild(svgEl(Icons.arrow));
-        btn.appendChild(arrow);
+        const label = document.createElement('span');
+        label.textContent = item.label || item.value || '';
+        btn.appendChild(label);
 
         if (!item.url) {
-          btn.addEventListener('click', () => {
-            if (item.formTrigger) {
-              widget._openLeadForm(item);
-            } else {
-              widget.sendMessage(item.value || item.label);
-            }
-          });
+          btn.addEventListener('click', () => widget.sendMessage(item.value || item.label));
         }
 
         wrap.appendChild(btn);
       });
 
       return wrap;
+    },
+
+    /**
+     * Single property card.
+     */
+    property_card(msg, widget) {
+      return _buildPropertyCard(msg.property || msg, widget);
+    },
+
+    /**
+     * Horizontally scrollable carousel of property cards.
+     */
+    property_cards(msg, widget) {
+      const props = Array.isArray(msg.properties) ? msg.properties : [];
+      if (!props.length) return null;
+
+      const carousel = document.createElement('div');
+      carousel.className = 'ttc-carousel';
+      carousel.setAttribute('role', 'list');
+      carousel.setAttribute('aria-label', 'Property listings');
+
+      props.forEach((p) => {
+        const card = _buildPropertyCard(p, widget);
+        if (card) {
+          card.setAttribute('role', 'listitem');
+          carousel.appendChild(card);
+        }
+      });
+
+      return carousel;
+    },
+
+    /**
+     * Single trip / package card.
+     */
+    trip_card(msg, widget) {
+      return _buildTripCard(msg.trip || msg, widget);
+    },
+
+    /**
+     * Horizontally scrollable carousel of trip cards.
+     */
+    trip_cards(msg, widget) {
+      const trips = Array.isArray(msg.trips) ? msg.trips : [];
+      if (!trips.length) return null;
+
+      const carousel = document.createElement('div');
+      carousel.className = 'ttc-carousel';
+      carousel.setAttribute('role', 'list');
+      carousel.setAttribute('aria-label', 'Trip recommendations');
+
+      trips.forEach((t) => {
+        const card = _buildTripCard(t, widget);
+        if (card) {
+          card.setAttribute('role', 'listitem');
+          carousel.appendChild(card);
+        }
+      });
+
+      return carousel;
     },
 
     /**
@@ -1406,7 +1434,7 @@
 
       if (msg.url) {
         const a = document.createElement('a');
-        a.className = 'ttc-btn ttc-btn-accent';
+        a.className = 'ttc-btn rce-btn-accent';
         a.href = msg.url;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
@@ -1438,7 +1466,347 @@
     },
   };
 
+  /**
+   * Build a luxury property card DOM node from a property data object.
+   * @param {Object} p  Property data
+   * @param {ChatWidget} widget
+   * @returns {HTMLElement}
+   */
+  function _buildPropertyCard(p, widget) {
+    if (!p) return null;
 
+    const card = document.createElement('article');
+    card.className = 'ttc-card';
+
+    // ── Image area ──
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'ttc-card-img-wrap';
+
+    if (p.image) {
+      const img = document.createElement('img');
+      img.className = 'ttc-card-img';
+      img.alt = p.title || 'Property image';
+      img.loading = 'lazy';
+      // Use IntersectionObserver for lazy loading
+      img.dataset.src = p.image;
+      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // 1px placeholder
+      _lazyLoad(img);
+      imgWrap.appendChild(img);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'ttc-card-img-placeholder';
+      placeholder.appendChild(svgEl(Icons.home));
+      imgWrap.appendChild(placeholder);
+    }
+
+    // Status / type badges
+    const badges = document.createElement('div');
+    badges.className = 'ttc-card-badges';
+
+    if (p.status) {
+      const badge = document.createElement('span');
+      const statusLower = p.status.toLowerCase().replace(/\s+/g, '-');
+      const cls = statusLower.includes('sale') ? 'ttc-cbadge-sale'
+        : statusLower.includes('rent') ? 'ttc-cbadge-rent'
+        : statusLower.includes('sold') ? 'ttc-cbadge-sold'
+        : 'ttc-cbadge-type';
+      badge.className = `rce-cbadge ${cls}`;
+      badge.textContent = p.status;
+      badges.appendChild(badge);
+    }
+
+    if (p.type) {
+      const typeBadge = document.createElement('span');
+      typeBadge.className = 'ttc-cbadge rce-cbadge-type';
+      typeBadge.textContent = p.type;
+      badges.appendChild(typeBadge);
+    }
+
+    if (badges.children.length) imgWrap.appendChild(badges);
+    card.appendChild(imgWrap);
+
+    // ── Body ──
+    const body = document.createElement('div');
+    body.className = 'ttc-card-body';
+
+    // Price
+    if (p.price !== undefined && p.price !== null) {
+      const price = document.createElement('div');
+      price.className = 'ttc-card-price';
+      const numPrice = parseFloat(String(p.price).replace(/[^0-9.]/g, ''));
+      price.textContent = isNaN(numPrice)
+        ? String(p.price)
+        : formatCurrency(numPrice, p.currency || 'USD', widget._config.locale);
+      body.appendChild(price);
+    }
+
+    // Title
+    if (p.title) {
+      const title = document.createElement('div');
+      title.className = 'ttc-card-title';
+      title.textContent = p.title;
+      title.title = p.title;
+      body.appendChild(title);
+    }
+
+    // Address
+    if (p.address) {
+      const addr = document.createElement('div');
+      addr.className = 'ttc-card-addr';
+      addr.appendChild(svgEl(Icons.location));
+      const addrText = document.createElement('span');
+      addrText.textContent = p.address;
+      addr.appendChild(addrText);
+      body.appendChild(addr);
+    }
+
+    // Stats row
+    const stats = [];
+    if (p.bedrooms != null) stats.push({ icon: Icons.bed, val: `${p.bedrooms} Bed${p.bedrooms !== 1 ? 's' : ''}` });
+    if (p.bathrooms != null) stats.push({ icon: Icons.bath, val: `${p.bathrooms} Bath${p.bathrooms !== 1 ? 's' : ''}` });
+    if (p.garage != null) stats.push({ icon: Icons.garage, val: `${p.garage} Car` });
+    if (p.sqft != null) stats.push({ icon: Icons.sqft, val: `${Number(p.sqft).toLocaleString()} ft²` });
+
+    if (stats.length) {
+      const statsRow = document.createElement('div');
+      statsRow.className = 'ttc-card-stats';
+      stats.forEach((s) => {
+        const stat = document.createElement('div');
+        stat.className = 'ttc-stat';
+        stat.appendChild(svgEl(s.icon));
+        const v = document.createElement('span');
+        v.textContent = s.val;
+        stat.appendChild(v);
+        statsRow.appendChild(stat);
+      });
+      body.appendChild(statsRow);
+    }
+
+    // Description
+    if (p.description) {
+      const desc = document.createElement('div');
+      desc.className = 'ttc-card-desc';
+      desc.textContent = p.description;
+      body.appendChild(desc);
+    }
+
+    // Action buttons
+    const actions = document.createElement('div');
+    actions.className = 'ttc-card-actions';
+
+    if (p.url) {
+      const viewBtn = document.createElement('a');
+      viewBtn.className = 'ttc-btn rce-btn-outline';
+      viewBtn.href = p.url;
+      viewBtn.target = '_blank';
+      viewBtn.rel = 'noopener noreferrer';
+      viewBtn.setAttribute('aria-label', `View property: ${p.title || ''}`);
+      viewBtn.appendChild(svgEl(Icons.eye));
+      const vLbl = document.createElement('span');
+      vLbl.textContent = 'View';
+      viewBtn.appendChild(vLbl);
+      actions.appendChild(viewBtn);
+    }
+
+    if (widget._config.bookingUrl) {
+      const bookBtn = document.createElement('a');
+      bookBtn.className = 'ttc-btn rce-btn-accent';
+      bookBtn.href = widget._config.bookingUrl;
+      bookBtn.target = '_blank';
+      bookBtn.rel = 'noopener noreferrer';
+      bookBtn.setAttribute('aria-label', `Schedule viewing for: ${p.title || 'property'}`);
+      bookBtn.appendChild(svgEl(Icons.calendar));
+      const bLbl = document.createElement('span');
+      bLbl.textContent = 'Book';
+      bookBtn.appendChild(bLbl);
+      actions.appendChild(bookBtn);
+    }
+
+    if (actions.children.length) body.appendChild(actions);
+    card.appendChild(body);
+
+    return card;
+  }
+
+  /**
+   * Build a luxury trip/package card DOM node from a trip data object.
+   * @param {Object} t  Trip data { title, price, location, type, duration,
+   *                     travelers, rating, tag, image, url }
+   * @param {ChatWidget} widget
+   * @returns {HTMLElement}
+   */
+  function _buildTripCard(t, widget) {
+    if (!t) return null;
+
+    const card = document.createElement('article');
+    card.className = 'ttc-card';
+
+    // ── Image area ──
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'ttc-card-img-wrap';
+
+    if (t.image) {
+      const img = document.createElement('img');
+      img.className = 'ttc-card-img';
+      img.alt = t.title || 'Trip image';
+      img.loading = 'lazy';
+      img.dataset.src = t.image;
+      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+      _lazyLoad(img);
+      imgWrap.appendChild(img);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'ttc-card-img-placeholder';
+      placeholder.appendChild(svgEl(Icons.plane));
+      imgWrap.appendChild(placeholder);
+    }
+
+    // Badges: trip type (Flight/Hotel/Cruise/Package) and a promo tag
+    const badges = document.createElement('div');
+    badges.className = 'ttc-card-badges';
+
+    if (t.type) {
+      const typeBadge = document.createElement('span');
+      typeBadge.className = 'ttc-cbadge rce-cbadge-type';
+      typeBadge.textContent = t.type;
+      badges.appendChild(typeBadge);
+    }
+
+    if (t.tag) {
+      const tagBadge = document.createElement('span');
+      tagBadge.className = 'ttc-cbadge rce-cbadge-sale';
+      tagBadge.textContent = t.tag;
+      badges.appendChild(tagBadge);
+    }
+
+    if (badges.children.length) imgWrap.appendChild(badges);
+    card.appendChild(imgWrap);
+
+    // ── Body ──
+    const body = document.createElement('div');
+    body.className = 'ttc-card-body';
+
+    // Price
+    if (t.price !== undefined && t.price !== null) {
+      const price = document.createElement('div');
+      price.className = 'ttc-card-price';
+      const numPrice = parseFloat(String(t.price).replace(/[^0-9.]/g, ''));
+      const priceText = isNaN(numPrice)
+        ? String(t.price)
+        : formatCurrency(numPrice, t.currency || 'USD', widget._config.locale);
+      price.textContent = t.priceUnit ? `${priceText} ${t.priceUnit}` : priceText;
+      body.appendChild(price);
+    }
+
+    // Title
+    if (t.title) {
+      const title = document.createElement('div');
+      title.className = 'ttc-card-title';
+      title.textContent = t.title;
+      title.title = t.title;
+      body.appendChild(title);
+    }
+
+    // Location
+    if (t.location) {
+      const addr = document.createElement('div');
+      addr.className = 'ttc-card-addr';
+      addr.appendChild(svgEl(Icons.location));
+      const addrText = document.createElement('span');
+      addrText.textContent = t.location;
+      addr.appendChild(addrText);
+      body.appendChild(addr);
+    }
+
+    // Stats row: duration, travelers, rating
+    const stats = [];
+    if (t.duration != null) stats.push({ icon: Icons.clock, val: t.duration });
+    if (t.travelers != null) stats.push({ icon: Icons.users, val: `${t.travelers} traveler${t.travelers !== 1 ? 's' : ''}` });
+    if (t.rating != null) stats.push({ icon: Icons.star, val: `${t.rating}` });
+
+    if (stats.length) {
+      const statsRow = document.createElement('div');
+      statsRow.className = 'ttc-card-stats';
+      stats.forEach((s) => {
+        const stat = document.createElement('div');
+        stat.className = 'ttc-stat';
+        stat.appendChild(svgEl(s.icon));
+        const v = document.createElement('span');
+        v.textContent = s.val;
+        stat.appendChild(v);
+        statsRow.appendChild(stat);
+      });
+      body.appendChild(statsRow);
+    }
+
+    // Description
+    if (t.description) {
+      const desc = document.createElement('div');
+      desc.className = 'ttc-card-desc';
+      desc.textContent = t.description;
+      body.appendChild(desc);
+    }
+
+    // Action buttons
+    const actions = document.createElement('div');
+    actions.className = 'ttc-card-actions';
+
+    if (t.url) {
+      const viewBtn = document.createElement('a');
+      viewBtn.className = 'ttc-btn rce-btn-outline';
+      viewBtn.href = t.url;
+      viewBtn.target = '_blank';
+      viewBtn.rel = 'noopener noreferrer';
+      viewBtn.setAttribute('aria-label', `View trip: ${t.title || ''}`);
+      viewBtn.appendChild(svgEl(Icons.eye));
+      const vLbl = document.createElement('span');
+      vLbl.textContent = 'View';
+      viewBtn.appendChild(vLbl);
+      actions.appendChild(viewBtn);
+    }
+
+    if (widget._config.bookingUrl) {
+      const bookBtn = document.createElement('a');
+      bookBtn.className = 'ttc-btn rce-btn-accent';
+      bookBtn.href = widget._config.bookingUrl;
+      bookBtn.target = '_blank';
+      bookBtn.rel = 'noopener noreferrer';
+      bookBtn.setAttribute('aria-label', `Enquire about: ${t.title || 'trip'}`);
+      bookBtn.appendChild(svgEl(Icons.calendar));
+      const bLbl = document.createElement('span');
+      bLbl.textContent = 'Enquire';
+      bookBtn.appendChild(bLbl);
+      actions.appendChild(bookBtn);
+    }
+
+    if (actions.children.length) body.appendChild(actions);
+    card.appendChild(body);
+
+    return card;
+  }
+
+  /**
+   * Lazy-load a property card image using IntersectionObserver.
+   * @param {HTMLImageElement} img
+   */
+  function _lazyLoad(img) {
+    if (!('IntersectionObserver' in window)) {
+      img.src = img.dataset.src;
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.src = entry.target.dataset.src;
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin: '100px' }
+    );
+    observer.observe(img);
+  }
 
   /**
    * Build a lead capture form DOM node.
@@ -1486,7 +1854,7 @@
       const label = document.createElement('label');
       label.className = 'ttc-label';
       label.textContent = def.label + (def.required ? ' *' : '');
-      const inputId = `ttc-field-${f}`;
+      const inputId = `rce-field-${f}`;
       label.setAttribute('for', inputId);
       fieldWrap.appendChild(label);
 
@@ -1549,7 +1917,7 @@
 
     // Submit button
     const submitBtn = document.createElement('button');
-    submitBtn.className = 'ttc-btn ttc-btn-accent';
+    submitBtn.className = 'ttc-btn rce-btn-accent';
     submitBtn.style.width = '100%';
     submitBtn.style.marginTop = '4px';
     submitBtn.textContent = msg.submitLabel || 'Send Enquiry';
@@ -1611,7 +1979,7 @@
         ok.className = 'ttc-form-ok';
         ok.appendChild(svgEl(Icons.check));
         const okText = document.createElement('span');
-        okText.textContent = 'Enquiry sent';
+        okText.textContent = "Thanks! We'll be in touch soon.";
         ok.appendChild(okText);
         form.appendChild(ok);
       } catch {
@@ -1622,197 +1990,6 @@
     });
 
     return form;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // SECTION 13b · AUTO-NAVIGATION — keyword → site buttons
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Maps topic keywords to navigation button sets.
-   * Buttons appear automatically after the bot responds to a matching message.
-   * Only the FIRST matching topic fires (most specific match wins).
-   */
-  const AUTO_NAV = [
-    {
-      keywords: /cruise|ship|sail|caribbean|mediterranean|bahamas|alaska|voyage|royal|carnival|ncl|celebrity|disney cruise/i,
-      items: [
-        {
-          label: 'Browse Cruises',
-          subtitle: 'Caribbean, Mediterranean & more',
-          url: 'https://tajeblack.inteletravel.com',
-          icon: 'cruise',
-        },
-        {
-          label: 'Get a Cruise Quote',
-          subtitle: 'Fill out a quick form',
-          formTrigger: true,
-          formTitle: 'Get Your Cruise Quote',
-          icon: 'contact',
-        },
-      ],
-    },
-    {
-      keywords: /flight|fly|airline|airfare|ticket|airport|one.way|round.trip|nonstop|layover/i,
-      items: [
-        {
-          label: 'Search Flights',
-          subtitle: 'Best fares to any destination',
-          url: 'https://tajeblack.inteletravel.com',
-          icon: 'plane',
-        },
-        {
-          label: 'Ask Taje About Flights',
-          subtitle: 'Fill out a quick form',
-          formTrigger: true,
-          formTitle: 'Get Your Flight Quote',
-          icon: 'contact',
-        },
-      ],
-    },
-    {
-      keywords: /hotel|stay|resort|room|accommodation|airbnb|lodge|inn|suite|villa|all.inclusive/i,
-      items: [
-        {
-          label: 'Browse Hotels & Stays',
-          subtitle: 'Resorts, villas & curated stays',
-          url: 'https://tajeblack.inteletravel.com',
-          icon: 'bed',
-        },
-        {
-          label: 'Ask Taje About Stays',
-          subtitle: 'Fill out a quick form',
-          formTrigger: true,
-          formTitle: 'Get Your Stay Recommendation',
-          icon: 'contact',
-        },
-      ],
-    },
-    {
-      keywords: /group|party|reunion|corporate|team|friends|wedding|honeymoon|bachelorette|birthday|family trip|church|sorority|fraternity/i,
-      items: [
-        {
-          label: 'Plan a Group Vacation',
-          subtitle: 'Birthdays, reunions & group getaways',
-          url: 'https://tajeblack.inteletravel.com',
-          icon: 'group',
-        },
-        {
-          label: 'Contact Taje for Groups',
-          subtitle: 'Fill out a quick form',
-          formTrigger: true,
-          formTitle: 'Get Your Group Quote',
-          icon: 'contact',
-        },
-      ],
-    },
-    {
-      keywords: /insur|protect|cover|policy|cancel|emergency|medical|lost bag|refund/i,
-      items: [
-        {
-          label: 'Travel Insurance',
-          subtitle: 'Peace of mind for every journey',
-          url: 'https://www.etravelprotection.com/allianz/home',
-          icon: 'shield',
-        },
-        {
-          label: 'Why You Need Insurance',
-          subtitle: 'Read Taje\'s guide (PDF)',
-          url: 'https://d3nyn9h0k44yua.cloudfront.net/media/backoffice/us/pdf/WhyPurchaseInsurance.pdf',
-          icon: 'externalLink',
-        },
-      ],
-    },
-    {
-      keywords: /activity|activities|excursion|tour|experience|things to do|adventure|event/i,
-      items: [
-        {
-          label: 'Browse Activities & Tours',
-          subtitle: 'Excursions & local experiences',
-          url: 'https://tajeblack.inteletravel.com',
-          icon: 'calendar',
-        },
-        {
-          label: 'Ask Taje',
-          subtitle: 'Fill out a quick form',
-          formTrigger: true,
-          formTitle: 'Get Activity Recommendations',
-          icon: 'contact',
-        },
-      ],
-    },
-    {
-      keywords: /ride|car service|airport pickup|airport transfer|shuttle|taxi|car rental|private driver/i,
-      items: [
-        {
-          label: 'Browse Rides',
-          subtitle: 'Airport transfers & private cars',
-          url: 'https://tajeblack.inteletravel.com',
-          icon: 'ride',
-        },
-        {
-          label: 'Ask Taje About Rides',
-          subtitle: 'Fill out a quick form',
-          formTrigger: true,
-          formTitle: 'Get Your Ride Quote',
-          icon: 'contact',
-        },
-      ],
-    },
-    {
-      keywords: /passport|visa|entry requirement|documentation needed|travel document/i,
-      items: [
-        {
-          label: 'Passports & Visas',
-          subtitle: '40% off service fees via CIBT',
-          url: 'https://cibtvisas.com/?login=inteletravel',
-          icon: 'idcard',
-        },
-        {
-          label: 'Ask Taje',
-          subtitle: 'Fill out a quick form',
-          formTrigger: true,
-          formTitle: 'Get Help With Your Documents',
-          icon: 'contact',
-        },
-      ],
-    },
-    {
-      keywords: /book|reserve|enquire|contact|quote|plan|help|vacation|trip|package|deal|where.*go|going.*to|travel/i,
-      items: [
-        {
-          label: 'Book with Taje',
-          subtitle: 'Start planning your dream trip',
-          url: 'https://tajeblack.inteletravel.com',
-          icon: 'calendar',
-        },
-        {
-          label: 'Get a Quote',
-          subtitle: 'Fill out a quick form',
-          formTrigger: true,
-          icon: 'contact',
-        },
-      ],
-    },
-  ];
-
-  /**
-   * Match a user message against AUTO_NAV and return DOM button node or null.
-   * @param {string} text  The user's raw message
-   * @param {ChatWidget} widget
-   * @returns {Node|null}
-   */
-  function _buildAutoNavButtons(text, widget) {
-    if (!text || typeof text !== 'string') return null;
-    for (let i = 0; i < AUTO_NAV.length; i++) {
-      if (AUTO_NAV[i].keywords.test(text)) {
-        // Never show the same topic's buttons two messages in a row.
-        if (widget._lastNavTopic === i) return null;
-        widget._lastNavTopic = i;
-        return Renderers.buttons({ items: AUTO_NAV[i].items }, widget);
-      }
-    }
-    return null;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1836,7 +2013,7 @@
       lEl.className = 'ttc-dl';
       lEl.textContent = `[${label}] `;
       const vEl = document.createElement('span');
-      vEl.className = `ttc-dv ${cls}`;
+      vEl.className = `rce-dv ${cls}`;
       vEl.textContent = typeof value === 'object' ? JSON.stringify(value) : String(value);
       entry.appendChild(lEl);
       entry.appendChild(vEl);
@@ -1916,9 +2093,6 @@
       /** @type {boolean} Whether handoff mode is active */
       this._handoff = false;
 
-      /** @type {number} Index of the last auto-nav topic shown (-1 = none) */
-      this._lastNavTopic = -1;
-
       /** @type {number} Unread message count */
       this._unread = 0;
 
@@ -1947,15 +2121,6 @@
 
     /** Mount the widget into the page. */
     mount() {
-      // Defensive cleanup: if a stale #ttc-widget-root is already in the DOM
-      // (e.g. leftover from a previous mount that wasn't torn down properly
-      // in a single-page app), remove it before mounting fresh.
-      const stale = document.getElementById('ttc-widget-root');
-      if (stale) {
-        console.warn('[TayTravelsChatbot] Found an existing #ttc-widget-root — removing it before mounting.');
-        stale.remove();
-      }
-
       this._host = document.createElement('div');
       this._host.id = 'ttc-widget-root';
       this._host.setAttribute('aria-label', 'Chat widget');
@@ -1973,7 +2138,7 @@
       }
 
       if (!this._messages.length) {
-        this._renderWelcome();
+        this._sendWelcomeMessage();
       }
 
       if (this._config.debug) {
@@ -2015,13 +2180,8 @@
       if (age > this._config.sessionMaxAge) return;
 
       this._visitorInfo = Storage.get('visitor') || null;
-      this._messages = stored.slice();
       stored.forEach((msg) => this._rehydrateMessage(msg));
-      // If the saved conversation ended in a live-agent handoff, keep the
-      // input locked after a page reload as well.
-      if (this._handoff) {
-        this._setInputDisabled(true, 'Connected to a live agent. Conversation continues here.');
-      }
+      this._messages = stored;
     }
 
     _persistMessages() {
@@ -2045,7 +2205,7 @@
 
       // ── Launcher button ──
       this._launcher = document.createElement('button');
-      this._launcher.className = `ttc-launcher ${posClass}`;
+      this._launcher.className = `rce-launcher ${posClass}`;
       this._launcher.setAttribute('aria-label', `Open ${this._config.assistantName} chat`);
       this._launcher.setAttribute('aria-haspopup', 'dialog');
       this._launcher.setAttribute('aria-expanded', 'false');
@@ -2053,10 +2213,10 @@
       this._chatIcon = svgEl(Icons.chat);
       this._chatIcon.setAttribute('class', 'ttc-launcher-icon');
       this._closeIcon = svgEl(Icons.close);
-      this._closeIcon.setAttribute('class', 'ttc-launcher-icon ttc-hidden');
+      this._closeIcon.setAttribute('class', 'ttc-launcher-icon rce-hidden');
 
       this._badge = document.createElement('span');
-      this._badge.className = 'ttc-badge ttc-hidden';
+      this._badge.className = 'ttc-badge rce-hidden';
       this._badge.setAttribute('aria-label', '0 unread messages');
 
       this._launcher.appendChild(this._chatIcon);
@@ -2066,7 +2226,7 @@
 
       // ── Chat panel ──
       this._panel = document.createElement('div');
-      this._panel.className = `ttc-panel ${posClass}`;
+      this._panel.className = `rce-panel ${posClass}`;
       this._panel.setAttribute('role', 'dialog');
       this._panel.setAttribute('aria-modal', 'true');
       this._panel.setAttribute('aria-label', `${this._config.assistantName} – ${this._config.agencyName}`);
@@ -2353,11 +2513,10 @@
       this._visitorInfo = null;
       this._handoff = false;
       this._loading = false;
-      this._lastNavTopic = -1;
       this._unread = 0;
       this._setInputDisabled(false);
       this._msgs.innerHTML = '';
-      this._renderWelcome();
+      this._sendWelcomeMessage();
       EventBus.emit('widget:restart');
     }
 
@@ -2373,35 +2532,13 @@
     }
 
     /**
-     * Open the lead capture form directly in the chat, without a webhook
-     * round-trip. Used by "formTrigger" buttons (e.g. replacing a mailto
-     * link so visitors fill out a quote form instead of leaving the page).
-     * @param {Object} [item] The button item that triggered this, may carry
-     *   optional formTitle / formFields / formSubmitLabel overrides.
-     */
-    async _openLeadForm(item = {}) {
-      if (this._handoff) return;
-      await this._renderBotMessage({
-        type: 'lead_form',
-        title: item.formTitle || 'Get Your Free Travel Quote',
-        fields: item.formFields || ['name', 'email', 'phone', 'destination', 'tripType', 'travelDates', 'message'],
-        submitLabel: item.formSubmitLabel || 'Send My Enquiry',
-      });
-      this._persistMessages();
-    }
-
-    /**
      * Send a message (programmatically or from user input).
      * Appends user bubble, shows typing indicator, calls webhook.
      * @param {string} text
      * @param {string} [type='text']
      */
     async sendMessage(text, type = 'text') {
-      // Block re-entrant sends: rapid Enter presses, double-tapped quick
-      // replies / suggested questions, or any send while a previous webhook
-      // call is still in flight would otherwise produce duplicate bubbles
-      // and duplicate webhook calls.
-      if (!text || this._handoff || this._loading) return;
+      if (!text || this._handoff) return;
 
       // Clear welcome screen if first message
       const welcomeEl = this._msgs.querySelector('.ttc-welcome');
@@ -2454,28 +2591,6 @@
           if (msg.type === 'handoff') {
             this._handoff = true;
             this._setInputDisabled(true, 'Connected to a live agent. Conversation continues here.');
-          }
-        }
-
-        // Auto-inject navigation buttons based on what the user asked —
-        // but ONLY when the AI reply didn't already include action UI
-        // (buttons / lead form / quick replies). Otherwise the chat shows
-        // two stacked button groups for a single message.
-        const aiAlreadyActed = messages.some(
-          (m) => m.type === 'buttons' || m.type === 'lead_form' || m.type === 'quick_replies'
-        );
-        if (!this._handoff && !aiAlreadyActed) {
-          const navNode = _buildAutoNavButtons(text, this);
-          if (navNode) {
-            await new Promise((r) => setTimeout(r, 180));
-            const row = document.createElement('div');
-            row.className = 'ttc-row';
-            const body = document.createElement('div');
-            body.className = 'ttc-msg-body';
-            body.appendChild(navNode);
-            row.appendChild(body);
-            this._msgs.appendChild(row);
-            this._scrollToBottom();
           }
         }
 
@@ -2532,10 +2647,7 @@
         }
       };
 
-      // Never auto-retry lead submissions: if the request reached the server
-      // but the response was lost, a silent retry would record the lead twice.
-      const isLeadSubmit = extra.messageType === 'lead_form_submit';
-      const raw = await WebhookClient.send(this._config.webhook, payload, { retries: isLeadSubmit ? 0 : 1 });
+      const raw = await WebhookClient.send(this._config.webhook, payload);
       const { messages } = ResponseParser.parse(raw);
       for (const msg of messages) await this._renderBotMessage(msg);
     }
@@ -2605,15 +2717,15 @@
      * Append a user message bubble.
      * @param {{ role: string, content: string, ts: number }} msg
      */
-    _appendMessage(msg, record = true) {
+    _appendMessage(msg) {
       const row = document.createElement('div');
-      row.className = 'ttc-row ttc-user';
+      row.className = 'ttc-row rce-user';
 
       const body = document.createElement('div');
       body.className = 'ttc-msg-body';
 
       const bubble = document.createElement('div');
-      bubble.className = 'ttc-bubble ttc-user';
+      bubble.className = 'ttc-bubble rce-user';
       bubble.textContent = msg.content;
 
       const ts = document.createElement('div');
@@ -2632,7 +2744,7 @@
 
       this._msgs.appendChild(row);
       this._scrollToBottom();
-      if (record) this._messages.push(msg);
+      this._messages.push(msg);
       this._trimMessages();
     }
 
@@ -2642,13 +2754,8 @@
      */
     _rehydrateMessage(msg) {
       if (msg.role === 'user') {
-        this._appendMessage(msg, false);
+        this._appendMessage(msg);
       } else if (msg.role === 'bot' && msg.type) {
-        // Skip interactive message types on restore: the data needed to
-        // rebuild them isn't persisted, and re-showing a stale lead form
-        // after a reload invites a duplicate submission.
-        if (msg.type === 'lead_form' || msg.type === 'buttons' || msg.type === 'quick_replies') return;
-        if (msg.type === 'handoff') this._handoff = true;
         const renderer = Renderers[msg.type];
         if (!renderer) return;
         const node = renderer(msg, this);
@@ -2704,60 +2811,33 @@
       return row;
     }
 
-    _renderWelcome() {
-      const wrap = document.createElement('div');
-      wrap.className = 'ttc-welcome';
-
-      // Logo
-      const logo = document.createElement('div');
-      logo.className = 'ttc-welcome-logo';
-      if (this._config.logo) {
-        const img = document.createElement('img');
-        img.src = this._config.logo;
-        img.alt = this._config.agencyName;
-        logo.appendChild(img);
-      } else {
-        logo.appendChild(svgEl(Icons.home));
-      }
-      wrap.appendChild(logo);
-
-      const title = document.createElement('div');
-      title.className = 'ttc-welcome-title';
-      title.textContent = this._config.agencyName;
-      wrap.appendChild(title);
-
-      const msg = document.createElement('div');
-      msg.className = 'ttc-welcome-msg';
-      msg.textContent = this._config.welcomeMessage;
-      wrap.appendChild(msg);
-
+    /**
+     * Send the welcome message as a real, first chat bubble — not a static
+     * decorative panel. Shows a brief typing indicator, then the message,
+     * then (optionally) suggested-question quick-replies. Both get pushed
+     * into _messages and persisted, so this only fires once per session
+     * (on restore, _restoreSession finds the saved messages and skips this).
+     */
+    async _sendWelcomeMessage() {
       const questions = this._config.suggestedQuestions || [];
-      if (questions.length) {
-        const sugWrap = document.createElement('div');
-        sugWrap.className = 'ttc-suggested';
-        sugWrap.setAttribute('role', 'list');
-        questions.forEach((q) => {
-          const btn = document.createElement('button');
-          btn.className = 'ttc-sug-btn';
-          btn.setAttribute('role', 'listitem');
-          btn.setAttribute('aria-label', `Ask: ${q}`);
-          const lbl = document.createElement('span');
-          lbl.textContent = q;
-          btn.appendChild(lbl);
-          const arrow = document.createElement('span');
-          arrow.className = 'ttc-sug-arrow';
-          arrow.appendChild(svgEl(Icons.arrow));
-          btn.appendChild(arrow);
-          btn.addEventListener('click', () => {
-            wrap.remove();
-            this.sendMessage(q);
-          });
-          sugWrap.appendChild(btn);
-        });
-        wrap.appendChild(sugWrap);
+      if (!this._config.welcomeMessage && !questions.length) return;
+
+      const typingRow = this._appendTyping();
+      await new Promise((r) => setTimeout(r, 500));
+      typingRow.remove();
+
+      if (this._config.welcomeMessage) {
+        await this._renderBotMessage({ type: 'text', content: this._config.welcomeMessage });
       }
 
-      this._msgs.appendChild(wrap);
+      if (questions.length) {
+        await this._renderBotMessage({
+          type: 'quick_replies',
+          items: questions.map((q) => ({ label: q, value: q })),
+        });
+      }
+
+      this._persistMessages();
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -2778,10 +2858,9 @@
     }
 
     _trimMessages() {
-      let rows = this._msgs.querySelectorAll('.ttc-row');
-      while (rows.length > MAX_MESSAGES_IN_DOM) {
+      const rows = this._msgs.querySelectorAll('.ttc-row');
+      if (rows.length > MAX_MESSAGES_IN_DOM) {
         rows[0].remove();
-        rows = this._msgs.querySelectorAll('.ttc-row');
       }
     }
 
@@ -2820,7 +2899,7 @@
 
   /**
    * @namespace TayTravelsChatbot
-   * @description Public JavaScript API for the Tay Travels AI Chatbot Widget.
+   * @description Public JavaScript API for the Real Estate AI Chatbot Widget.
    */
   const TayTravelsChatbot = {
     /**
@@ -2833,9 +2912,9 @@
      * @example
      * TayTravelsChatbot.init({
      *   webhook: 'https://my-n8n.app/webhook/abc',
-     *   agencyName: 'Tay Travels',
-     *   assistantName: 'Taje',
-     *   theme: { primary: '#1E255D', accent: '#D50032' },
+     *   agencyName: 'Luxury Homes',
+     *   assistantName: 'Emma',
+     *   theme: { primary: '#081A33', accent: '#D4AF37' },
      * });
      */
     init(userConfig = {}) {
