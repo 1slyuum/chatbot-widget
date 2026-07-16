@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Travel Chatbot — Embed Demo</title>
+  <style>
+    body { font-family: Georgia, serif; max-width: 720px; margin: 60px auto; padding: 0 24px; color: #1c2b3a; line-height: 1.7; }
+    h1 { color: #0B3D5C; }
+    code { background: #eef3f7; padding: 2px 6px; border-radius: 4px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Travel Chatbot — Embed Demo</h1>
+  <p>This page embeds the chatbot with a <strong>single script tag</strong>. Look at the bottom-right corner of the screen — the launcher bubble is there. Click it to open the chat.</p>
+  <p>The chatbot is configured entirely through <code>data-*</code> attributes on the script tag below. Change them to rebrand the widget or point it at any workflow webhook (n8n, Make, Zapier, or your own API).</p>
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       THE EMBED — this one tag is all you need on any website.
+       Host chatbot-embed.js + chatbot-widget.js in the same folder.
+       ════════════════════════════════════════════════════════════════════ -->
+  <script src="chatbot-embed.js"
+          data-webhook="https://islempharm.app.n8n.cloud/webhook/travel-chatbot/chat"
+          data-agency-name="Travel Advisor"
+          data-assistant-name="Alex"
+          data-primary="#0B3D5C"
+          data-accent="#F2A93B"
+          data-position="bottom-right"
+          data-welcome-message="Hi! I'm here to help you plan your next trip. Where would you like to go?"
+          data-suggested-questions="Show me vacation deals|I'd like a cruise recommendation|Help me plan a trip"
+          async></script>
+</body>
+</html>
