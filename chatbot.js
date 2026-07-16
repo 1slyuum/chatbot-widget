@@ -1624,7 +1624,7 @@
    * @returns {HTMLElement}
    */
   function _buildLeadForm(msg, widget) {
-    const allowedFields = ['name', 'email', 'phone', 'interest', 'message'];
+    const allowedFields = ['name', 'email', 'phone', 'company', 'interest', 'message'];
     const fields = (Array.isArray(msg.fields) ? msg.fields : allowedFields)
       .filter((f) => allowedFields.includes(f));
 
@@ -1647,6 +1647,7 @@
       name:     { label: 'Full Name',        type: 'text',  placeholder: 'Your full name',      required: true },
       email:    { label: 'Email Address',     type: 'email', placeholder: 'your@email.com',      required: true },
       phone:    { label: 'Phone Number',      type: 'tel',   placeholder: '+1 (555) 000-0000',   required: false },
+      company:  { label: 'Company',           type: 'text',  placeholder: 'Company (optional)',  required: false },
       interest: { label: 'Interested In',     type: 'select',options: ['Buying', 'Renting', 'Selling', 'Investment', 'Just browsing'], required: false },
       message:  { label: 'Message',           type: 'textarea', placeholder: 'Tell us more about what you\'re looking for…', required: false },
     };
@@ -2433,6 +2434,10 @@
         message: extra.content || "", // Backward compatibility
         sessionId: this._sessionId,
         messageType: extra.messageType || "text",
+        // Full, untouched form field values — required so the workflow can
+        // log/email the exact data the visitor typed without needing the
+        // AI to reconstruct it from a text description.
+        formData: extra.formData || null,
         body: {
           agencyName: this._config.agencyName,
           assistantName: this._config.assistantName,
