@@ -54,48 +54,9 @@
 </div>
 
 <!-- 1. Load the Chatbot Widget Stylesheet -->
-<link rel="stylesheet" href="https://1slyuum.github.io/chatbot-widget/chatbot.css">
-
-<!-- 2. Load the main Chatbot Widget JavaScript -->
-<script src="https://1slyuum.github.io/chatbot-widget/chatbot.js"></script>
-
-<!-- 3. Initialize Chatbot with Custom settings -->
-<script>
-  window.addEventListener('DOMContentLoaded', () => {
-    RealEstateChatbot.init({
-      // ⚠️ Client n8n Webhook URL (Change to their n8n instance)
-      webhook: "https://islempharm.app.n8n.cloud/webhook/real-estate-chatbot",
-      
-      // Branding Customizations
-      agencyName: "Luxury Mansions",     // Name shown in header & welcome screens
-      assistantName: "Emma",             // Name of the AI assistant
-      logo: "https://yourclient.com/logo.png",      // Optional: URL to agency logo
-      avatar: "https://yourclient.com/emma.png",    // Optional: URL to assistant avatar icon
-      
-      // Client Booking / Calendar Link
-      bookingUrl: "https://calendly.com/client-broker-name", 
-      
-      // Custom Color Themes (Button states, borders, and accents are derived dynamically)
-      theme: {
-        primary: "#081A33",   // Hex color for primary buttons & header background
-        accent: "#D4AF37",    // Hex color for borders, highlights & badges
-        mode: "auto"          // Theme mode: "light", "dark", or "auto" (matches user OS preferences)
-      },
-      
-      // Welcome Configuration
-      welcomeMessage: "Hello! Welcome to Luxury Mansions. Let me know what you are looking for today.",
-      suggestedQuestions: [
-        "What properties are available?",
-        "I'd like to book a property viewing",
-        "Connect me to an agent"
-      ],
-      
-      // Layout preferences
-      position: "bottom-right", // Float position: "bottom-right" or "bottom-left"
-      borderRadius: 16,        // Rounded corners radius (in pixels)
-      persistConversation: true // Restores previous messages if they browse pages
-    });
-  });
-</script>
+<script src="https://1slyuum.github.io/chatbot-widget/travel-agent-chatbot.js"
+  src="https://1slyuum.github.io/chatbot-widget/travel-agent-chatbot.css"
+        data-webhook="https://islempharm.app.n8n.cloud/webhook/travel-chatbot/chat"
+        async></script>
 
   defer></script>
