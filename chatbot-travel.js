@@ -14,6 +14,18 @@
   'use strict';
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // GUARD · Prevent double-execution if the script tag is accidentally
+  // included more than once on the page (duplicate embed snippets, a CMS
+  // injecting it on every partial, etc). Without this, every click fires
+  // twice and you get duplicate messages/buttons in the chat.
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (window.TayTravelsChatbot) {
+    console.warn('[TayTravelsChatbot] Script already loaded on this page — skipping duplicate load. ' +
+      'Check your HTML for more than one <script src=".../chatbot-travel.js"> tag.');
+    return;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // SECTION 1 · CONSTANTS & DEFAULTS
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1929,6 +1941,15 @@
 
     /** Mount the widget into the page. */
     mount() {
+      // Defensive cleanup: if a stale #ttc-widget-root is already in the DOM
+      // (e.g. leftover from a previous mount that wasn't torn down properly
+      // in a single-page app), remove it before mounting fresh.
+      const stale = document.getElementById('ttc-widget-root');
+      if (stale) {
+        console.warn('[TayTravelsChatbot] Found an existing #ttc-widget-root — removing it before mounting.');
+        stale.remove();
+      }
+
       this._host = document.createElement('div');
       this._host.id = 'ttc-widget-root';
       this._host.setAttribute('aria-label', 'Chat widget');
