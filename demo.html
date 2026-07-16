@@ -12,18 +12,27 @@
 <p>Open DevTools (F12) → Elements tab → confirm there is exactly ONE <code>#ttc-widget-root</code> in the DOM.</p>
 
 <!-- Tay Travels AI Chat Widget -->
-<link rel="stylesheet" href="https://1slyuum.github.io/chatbot-widget/chatbot-travel.css">
-<script src="https://1slyuum.github.io/chatbot-widget/chatbot-travel.js"></script>
+<!-- Tay Travels AI Chat Widget -->
+<script src="https://cdn.jsdelivr.net/gh/1slyuum/chatbot-widget@main/chatbot-travel.js"></script>
 <script>
   TayTravelsChatbot.init({
+    webhook: 'https://islempharm.app.n8n.cloud/webhook/travel-chatbot',
     agencyName: 'Tay Travels',
     assistantName: 'Taje',
-    webhook: 'https://islempharm.app.n8n.cloud/webhook/travel-chatbot',
-    theme: { primary: '#1E255D', accent: '#D50032' },
-    welcomeMessage: "Hi! I\u2019m Taje\u2019s assistant \u2014 where would you like to go?",
-    suggestedQuestions: ['Show me vacation deals', "I\u2019d like a cruise recommendation", 'Help me plan a trip'],
-    position: 'bottom-right'
+    theme: {
+      primary: '#1E255D',
+      accent: '#D50032',
+      mode: 'auto'
+    },
+    welcomeMessage: "Hi! I'm Taje's assistant — where would you like to go?",
+    suggestedQuestions: [
+      'Show me vacation deals',
+      "I'd like a cruise recommendation",
+      'Help me plan a trip',
+      'Do I need a passport or visa?'
+    ]
   });
+</script>
 </script>
 
 </body>
