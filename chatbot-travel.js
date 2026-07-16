@@ -1,12 +1,12 @@
 /*!
- * Real Estate AI Chatbot Widget v1.0.0
- * Production-ready white-label AI chatbot for real estate websites.
+ * Tay Travels AI Chatbot Widget v1.0.0
+ * Production-ready AI chatbot for the Tay Travels advisor website.
  * Communicates with any n8n (or compatible) webhook backend.
  *
- * @author    RealEstate Widget
+ * @author    Tay Travels Widget
  * @version   1.0.0
  * @license   MIT
- * @see       https://github.com/yourusername/real-estate-widget
+ * @see       https://github.com/tajeblack/travel-agent-chatbot
  *
  * No dependencies. Pure ES2022 + Shadow DOM.
  */
@@ -18,23 +18,23 @@
   // ─────────────────────────────────────────────────────────────────────────────
 
   const VERSION = '1.0.0';
-  const STORAGE_PREFIX = 'rce_';
+  const STORAGE_PREFIX = 'ttc_';
   const MAX_INPUT_LENGTH = 1000;
   const MAX_MESSAGES_IN_DOM = 80;
 
   /** @type {ChatConfig} Default configuration */
   const DEFAULTS = {
     webhook:'https://islempharm.app.n8n.cloud/webhook/travel-chatbot',
-    agencyName: 'Travel Advisor',
-    assistantName: 'Alex',
+    agencyName: 'Tay Travels',
+    assistantName: 'Taje',
     logo: null,
     avatar: null,
     theme: {
-      primary: '#0B3D5C',
-      accent: '#F2A93B',
+      primary: '#1E255D',
+      accent: '#D50032',
       mode: 'auto',
     },
-    welcomeMessage: "Hi! I'm here to help you plan your next trip. Where would you like to go?",
+    welcomeMessage: "Hi! I'm Taje's assistant — where would you like to go?",
     suggestedQuestions: [
       'Show me vacation deals',
       "I'd like a cruise recommendation",
@@ -834,7 +834,7 @@
 }
 
 /* ──────────── LAUNCHER ──────────── */
-.rce-launcher{
+.ttc-launcher{
   position:fixed;bottom:24px;right:24px;
   width:62px;height:62px;border-radius:50%;
   background:linear-gradient(145deg,var(--rce-primary),rgba(var(--rce-primary-rgb),.8));
@@ -844,20 +844,20 @@
   transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s ease;
   z-index:1;outline:none;
 }
-.rce-launcher.pos-left{right:auto;left:24px}
-.rce-launcher:hover{transform:scale(1.1);box-shadow:0 12px 36px rgba(var(--rce-primary-rgb),.55),0 0 0 8px rgba(var(--rce-accent-rgb),.12)}
-.rce-launcher:focus-visible{outline:2.5px solid var(--rce-accent);outline-offset:3px}
-.rce-launcher:active{transform:scale(.96)}
+.ttc-launcher.pos-left{right:auto;left:24px}
+.ttc-launcher:hover{transform:scale(1.1);box-shadow:0 12px 36px rgba(var(--rce-primary-rgb),.55),0 0 0 8px rgba(var(--rce-accent-rgb),.12)}
+.ttc-launcher:focus-visible{outline:2.5px solid var(--rce-accent);outline-offset:3px}
+.ttc-launcher:active{transform:scale(.96)}
 
-.rce-launcher-icon{
+.ttc-launcher-icon{
   width:28px;height:28px;color:var(--rce-accent);
   transition:opacity .2s,transform .3s cubic-bezier(.34,1.56,.64,1);
   position:absolute;
 }
-.rce-launcher-icon.rce-hidden{opacity:0;transform:rotate(80deg) scale(.5);pointer-events:none}
+.ttc-launcher-icon.ttc-hidden{opacity:0;transform:rotate(80deg) scale(.5);pointer-events:none}
 
 /* Badge */
-.rce-badge{
+.ttc-badge{
   position:absolute;top:-5px;right:-5px;
   min-width:20px;height:20px;border-radius:10px;
   background:#ef4444;color:#fff;
@@ -866,10 +866,10 @@
   padding:0 5px;border:2.5px solid var(--rce-bg,#fff);
   animation:rce-pop .3s cubic-bezier(.34,1.56,.64,1);
 }
-.rce-badge.rce-hidden{display:none}
+.ttc-badge.ttc-hidden{display:none}
 
 /* ──────────── PANEL ──────────── */
-.rce-panel{
+.ttc-panel{
   position:fixed;bottom:100px;right:24px;
   width:390px;height:620px;max-height:calc(100dvh - 110px);
   border-radius:var(--rce-radius);
@@ -882,261 +882,261 @@
   transform:scale(.85) translateY(24px);opacity:0;pointer-events:none;
   transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .25s ease;
 }
-.rce-panel.pos-left{right:auto;left:24px;transform-origin:bottom left}
-.rce-panel.rce-open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
+.ttc-panel.pos-left{right:auto;left:24px;transform-origin:bottom left}
+.ttc-panel.ttc-open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
 
 @media(max-width:480px){
-  .rce-panel{width:100dvw;height:100dvh;max-height:100dvh;bottom:0;right:0;left:0;border-radius:0}
-  .rce-panel.pos-left{left:0;right:0}
-  .rce-launcher{bottom:16px;right:16px}
-  .rce-launcher.pos-left{left:16px;right:auto}
+  .ttc-panel{width:100dvw;height:100dvh;max-height:100dvh;bottom:0;right:0;left:0;border-radius:0}
+  .ttc-panel.pos-left{left:0;right:0}
+  .ttc-launcher{bottom:16px;right:16px}
+  .ttc-launcher.pos-left{left:16px;right:auto}
 }
 
 /* ──────────── HEADER ──────────── */
-.rce-header{
+.ttc-header{
   padding:14px 18px;
   background:linear-gradient(140deg,var(--rce-primary) 0%,rgba(var(--rce-primary-rgb),.85) 100%);
   border-bottom:1px solid rgba(var(--rce-accent-rgb),.25);
   display:flex;align-items:center;gap:12px;flex-shrink:0;position:relative;
 }
-.rce-header::after{
+.ttc-header::after{
   content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
   background:linear-gradient(90deg,transparent,rgba(var(--rce-accent-rgb),.6),transparent);
 }
 
-.rce-avatar{
+.ttc-avatar{
   width:46px;height:46px;border-radius:50%;
   border:2px solid var(--rce-accent);overflow:hidden;flex-shrink:0;
   background:linear-gradient(135deg,rgba(var(--rce-accent-rgb),.3),rgba(var(--rce-accent-rgb),.1));
   display:flex;align-items:center;justify-content:center;
 }
-.rce-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.rce-avatar svg{width:22px;height:22px;color:var(--rce-accent)}
+.ttc-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.ttc-avatar svg{width:22px;height:22px;color:var(--rce-accent)}
 
-.rce-header-info{flex:1;min-width:0}
-.rce-agent-name{font-family:var(--rce-font);font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rce-status{display:flex;align-items:center;gap:5px;font-family:var(--rce-font);font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
-.rce-status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:rce-pulse 2s infinite;flex-shrink:0}
+.ttc-header-info{flex:1;min-width:0}
+.ttc-agent-name{font-family:var(--rce-font);font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttc-status{display:flex;align-items:center;gap:5px;font-family:var(--rce-font);font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
+.ttc-status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:rce-pulse 2s infinite;flex-shrink:0}
 
-.rce-header-actions{display:flex;gap:4px}
-.rce-hbtn{
+.ttc-header-actions{display:flex;gap:4px}
+.ttc-hbtn{
   width:34px;height:34px;border-radius:9px;border:none;
   background:rgba(255,255,255,.1);color:rgba(255,255,255,.75);
   cursor:pointer;display:flex;align-items:center;justify-content:center;
   transition:background .2s,color .2s;outline:none;flex-shrink:0;
 }
-.rce-hbtn:hover{background:rgba(255,255,255,.2);color:#fff}
-.rce-hbtn:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
-.rce-hbtn svg{width:16px;height:16px}
+.ttc-hbtn:hover{background:rgba(255,255,255,.2);color:#fff}
+.ttc-hbtn:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
+.ttc-hbtn svg{width:16px;height:16px}
 
 /* ──────────── MESSAGES ──────────── */
-.rce-msgs{
+.ttc-msgs{
   flex:1;overflow-y:auto;padding:18px 14px;
   display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;
 }
-.rce-msgs::-webkit-scrollbar{width:4px}
-.rce-msgs::-webkit-scrollbar-track{background:transparent}
-.rce-msgs::-webkit-scrollbar-thumb{background:var(--rce-scroll);border-radius:2px}
+.ttc-msgs::-webkit-scrollbar{width:4px}
+.ttc-msgs::-webkit-scrollbar-track{background:transparent}
+.ttc-msgs::-webkit-scrollbar-thumb{background:var(--rce-scroll);border-radius:2px}
 
-.rce-row{display:flex;gap:8px;max-width:100%;animation:rce-msgIn .32s cubic-bezier(.34,1.56,.64,1)}
-.rce-row.rce-user{flex-direction:row-reverse}
+.ttc-row{display:flex;gap:8px;max-width:100%;animation:rce-msgIn .32s cubic-bezier(.34,1.56,.64,1)}
+.ttc-row.ttc-user{flex-direction:row-reverse}
 
-.rce-msg-av{
+.ttc-msg-av{
   width:28px;height:28px;border-radius:50%;flex-shrink:0;overflow:hidden;
   border:1px solid var(--rce-border);
   background:linear-gradient(135deg,rgba(var(--rce-accent-rgb),.3),rgba(var(--rce-accent-rgb),.1));
   display:flex;align-items:center;justify-content:center;align-self:flex-end;
 }
-.rce-msg-av img{width:100%;height:100%;object-fit:cover}
-.rce-msg-av svg{width:13px;height:13px;color:var(--rce-accent)}
+.ttc-msg-av img{width:100%;height:100%;object-fit:cover}
+.ttc-msg-av svg{width:13px;height:13px;color:var(--rce-accent)}
 
-.rce-msg-body{max-width:calc(100% - 42px);display:flex;flex-direction:column;gap:4px}
-.rce-row.rce-user .rce-msg-body{align-items:flex-end}
+.ttc-msg-body{max-width:calc(100% - 42px);display:flex;flex-direction:column;gap:4px}
+.ttc-row.ttc-user .ttc-msg-body{align-items:flex-end}
 
-.rce-bubble{
+.ttc-bubble{
   padding:10px 14px;border-radius:18px;
   font-family:var(--rce-font);font-size:14px;line-height:1.55;word-break:break-word;
 }
-.rce-bubble.rce-bot{background:var(--rce-bot-bg);color:var(--rce-bot-color);border-bottom-left-radius:4px}
-.rce-bubble.rce-user{background:var(--rce-user-bg);color:var(--rce-user-color);border-bottom-right-radius:4px}
-.rce-bubble a{color:var(--rce-accent);text-decoration:underline}
-.rce-bubble code{font-family:'Courier New',monospace;font-size:12px;background:rgba(var(--rce-primary-rgb),.08);padding:1px 5px;border-radius:4px}
-.rce-bubble pre{background:rgba(var(--rce-primary-rgb),.06);padding:10px;border-radius:8px;overflow-x:auto;margin-top:6px}
-.rce-bubble pre code{background:none;padding:0}
-.rce-bubble h1,.rce-bubble h2,.rce-bubble h3{margin-bottom:5px;font-weight:700;line-height:1.3}
-.rce-bubble ul,.rce-bubble ol{padding-left:18px;margin:4px 0}
-.rce-bubble li{margin-bottom:2px}
-.rce-bubble blockquote{border-left:3px solid var(--rce-accent);padding-left:10px;margin:6px 0;opacity:.8;font-style:italic}
+.ttc-bubble.ttc-bot{background:var(--rce-bot-bg);color:var(--rce-bot-color);border-bottom-left-radius:4px}
+.ttc-bubble.ttc-user{background:var(--rce-user-bg);color:var(--rce-user-color);border-bottom-right-radius:4px}
+.ttc-bubble a{color:var(--rce-accent);text-decoration:underline}
+.ttc-bubble code{font-family:'Courier New',monospace;font-size:12px;background:rgba(var(--rce-primary-rgb),.08);padding:1px 5px;border-radius:4px}
+.ttc-bubble pre{background:rgba(var(--rce-primary-rgb),.06);padding:10px;border-radius:8px;overflow-x:auto;margin-top:6px}
+.ttc-bubble pre code{background:none;padding:0}
+.ttc-bubble h1,.ttc-bubble h2,.ttc-bubble h3{margin-bottom:5px;font-weight:700;line-height:1.3}
+.ttc-bubble ul,.ttc-bubble ol{padding-left:18px;margin:4px 0}
+.ttc-bubble li{margin-bottom:2px}
+.ttc-bubble blockquote{border-left:3px solid var(--rce-accent);padding-left:10px;margin:6px 0;opacity:.8;font-style:italic}
 
-.rce-ts{font-family:var(--rce-font);font-size:10px;color:var(--rce-muted);padding:0 4px}
-.rce-row.rce-user .rce-ts{text-align:right}
+.ttc-ts{font-family:var(--rce-font);font-size:10px;color:var(--rce-muted);padding:0 4px}
+.ttc-row.ttc-user .ttc-ts{text-align:right}
 
 /* Typing indicator */
-.rce-typing{display:flex;align-items:center;gap:5px;padding:12px 14px;background:var(--rce-bot-bg);border-radius:18px;border-bottom-left-radius:4px;width:fit-content}
-.rce-dot{width:7px;height:7px;border-radius:50%;background:var(--rce-text2);animation:rce-bounce 1.3s infinite}
-.rce-dot:nth-child(2){animation-delay:.2s}
-.rce-dot:nth-child(3){animation-delay:.4s}
+.ttc-typing{display:flex;align-items:center;gap:5px;padding:12px 14px;background:var(--rce-bot-bg);border-radius:18px;border-bottom-left-radius:4px;width:fit-content}
+.ttc-dot{width:7px;height:7px;border-radius:50%;background:var(--rce-text2);animation:rce-bounce 1.3s infinite}
+.ttc-dot:nth-child(2){animation-delay:.2s}
+.ttc-dot:nth-child(3){animation-delay:.4s}
 
 /* ──────────── QUICK REPLIES ──────────── */
-.rce-qrs{display:flex;flex-wrap:wrap;gap:8px;padding:2px 0}
-.rce-qr{
+.ttc-qrs{display:flex;flex-wrap:wrap;gap:8px;padding:2px 0}
+.ttc-qr{
   padding:7px 15px;border-radius:20px;
   border:1.5px solid var(--rce-accent);background:transparent;
   color:var(--rce-text);font-family:var(--rce-font);font-size:13px;font-weight:500;
   cursor:pointer;transition:background .2s,color .2s,transform .15s;outline:none;white-space:nowrap;
 }
-.rce-qr:hover{background:var(--rce-accent);color:var(--rce-primary);transform:translateY(-1px)}
-.rce-qr:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
-.rce-qr:active{transform:scale(.97)}
-.rce-qr.rce-used{opacity:.5;pointer-events:none}
+.ttc-qr:hover{background:var(--rce-accent);color:var(--rce-primary);transform:translateY(-1px)}
+.ttc-qr:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
+.ttc-qr:active{transform:scale(.97)}
+.ttc-qr.ttc-used{opacity:.5;pointer-events:none}
 
 /* ──────────── BUTTONS ──────────── */
-.rce-btns{display:flex;flex-direction:column;gap:8px;max-width:280px;margin-top:2px}
-.rce-btn{
+.ttc-btns{display:flex;flex-direction:column;gap:8px;max-width:280px;margin-top:2px}
+.ttc-btn{
   padding:10px 18px;border-radius:10px;border:none;
   font-family:var(--rce-font);font-size:13px;font-weight:600;
   cursor:pointer;transition:all .2s;text-align:center;text-decoration:none;
   display:flex;align-items:center;justify-content:center;gap:8px;outline:none;
 }
-.rce-btn-accent{
+.ttc-btn-accent{
   background:linear-gradient(135deg,var(--rce-accent),rgba(var(--rce-accent-rgb),.8));
   color:var(--rce-primary);box-shadow:0 4px 14px rgba(var(--rce-accent-rgb),.3);
 }
-.rce-btn-accent:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(var(--rce-accent-rgb),.4)}
-.rce-btn-outline{background:transparent;border:1.5px solid var(--rce-accent);color:var(--rce-text)}
-.rce-btn-outline:hover{background:rgba(var(--rce-accent-rgb),.08);transform:translateY(-1px)}
-.rce-btn:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
-.rce-btn:active{transform:scale(.97)!important}
-.rce-btn svg{width:15px;height:15px;flex-shrink:0}
+.ttc-btn-accent:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(var(--rce-accent-rgb),.4)}
+.ttc-btn-outline{background:transparent;border:1.5px solid var(--rce-accent);color:var(--rce-text)}
+.ttc-btn-outline:hover{background:rgba(var(--rce-accent-rgb),.08);transform:translateY(-1px)}
+.ttc-btn:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
+.ttc-btn:active{transform:scale(.97)!important}
+.ttc-btn svg{width:15px;height:15px;flex-shrink:0}
 
 /* ──────────── PROPERTY CARD ──────────── */
-.rce-card{
+.ttc-card{
   background:var(--rce-card-bg);border-radius:14px;
   border:1px solid var(--rce-border);overflow:hidden;
   width:280px;flex-shrink:0;
   box-shadow:var(--rce-shadow-sm);transition:transform .2s,box-shadow .2s;
 }
-.rce-card:hover{transform:translateY(-3px);box-shadow:var(--rce-shadow)}
+.ttc-card:hover{transform:translateY(-3px);box-shadow:var(--rce-shadow)}
 
-.rce-card-img-wrap{position:relative;overflow:hidden}
-.rce-card-img{width:100%;height:165px;object-fit:cover;display:block;transition:transform .4s ease}
-.rce-card:hover .rce-card-img{transform:scale(1.04)}
-.rce-card-img-placeholder{
+.ttc-card-img-wrap{position:relative;overflow:hidden}
+.ttc-card-img{width:100%;height:165px;object-fit:cover;display:block;transition:transform .4s ease}
+.ttc-card:hover .ttc-card-img{transform:scale(1.04)}
+.ttc-card-img-placeholder{
   width:100%;height:165px;
   background:linear-gradient(145deg,rgba(var(--rce-primary-rgb),.85),rgba(var(--rce-primary-rgb),.55));
   display:flex;align-items:center;justify-content:center;color:rgba(var(--rce-accent-rgb),.55);
 }
-.rce-card-img-placeholder svg{width:52px;height:52px}
+.ttc-card-img-placeholder svg{width:52px;height:52px}
 
-.rce-card-badges{position:absolute;top:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap}
-.rce-cbadge{
+.ttc-card-badges{position:absolute;top:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap}
+.ttc-cbadge{
   padding:3px 10px;border-radius:20px;
   font-family:var(--rce-font);font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
 }
-.rce-cbadge-sale{background:var(--rce-accent);color:var(--rce-primary)}
-.rce-cbadge-rent{background:#3b82f6;color:#fff}
-.rce-cbadge-sold{background:#ef4444;color:#fff}
-.rce-cbadge-type{background:rgba(var(--rce-primary-rgb),.75);color:#fff;backdrop-filter:blur(4px)}
+.ttc-cbadge-sale{background:var(--rce-accent);color:var(--rce-primary)}
+.ttc-cbadge-rent{background:#3b82f6;color:#fff}
+.ttc-cbadge-sold{background:#ef4444;color:#fff}
+.ttc-cbadge-type{background:rgba(var(--rce-primary-rgb),.75);color:#fff;backdrop-filter:blur(4px)}
 
-.rce-card-body{padding:14px}
-.rce-card-price{
+.ttc-card-body{padding:14px}
+.ttc-card-price{
   font-family:var(--rce-font);font-size:21px;font-weight:800;
   color:var(--rce-accent);letter-spacing:-.5px;margin-bottom:3px;
 }
-.rce-card-title{
+.ttc-card-title{
   font-family:var(--rce-font);font-size:13.5px;font-weight:600;color:var(--rce-text);
   margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.rce-card-addr{
+.ttc-card-addr{
   font-family:var(--rce-font);font-size:12px;color:var(--rce-text2);
   margin-bottom:10px;display:flex;align-items:center;gap:4px;
 }
-.rce-card-addr svg{width:11px;height:11px;flex-shrink:0;color:var(--rce-accent)}
+.ttc-card-addr svg{width:11px;height:11px;flex-shrink:0;color:var(--rce-accent)}
 
-.rce-card-stats{display:flex;gap:10px;margin-bottom:11px;flex-wrap:wrap}
-.rce-stat{display:flex;align-items:center;gap:3px;font-family:var(--rce-font);font-size:12px;color:var(--rce-text2)}
-.rce-stat svg{width:12px;height:12px;color:var(--rce-accent);flex-shrink:0}
+.ttc-card-stats{display:flex;gap:10px;margin-bottom:11px;flex-wrap:wrap}
+.ttc-stat{display:flex;align-items:center;gap:3px;font-family:var(--rce-font);font-size:12px;color:var(--rce-text2)}
+.ttc-stat svg{width:12px;height:12px;color:var(--rce-accent);flex-shrink:0}
 
-.rce-card-desc{
+.ttc-card-desc{
   font-family:var(--rce-font);font-size:12px;color:var(--rce-text2);line-height:1.5;
   margin-bottom:12px;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
-.rce-card-actions{display:flex;gap:8px}
-.rce-card-actions .rce-btn{flex:1;font-size:12px;padding:8px 10px;border-radius:9px}
+.ttc-card-actions{display:flex;gap:8px}
+.ttc-card-actions .ttc-btn{flex:1;font-size:12px;padding:8px 10px;border-radius:9px}
 
 /* Card carousel */
-.rce-carousel{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;max-width:100%}
-.rce-carousel::-webkit-scrollbar{height:3px}
-.rce-carousel::-webkit-scrollbar-thumb{background:var(--rce-accent);border-radius:2px}
+.ttc-carousel{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;max-width:100%}
+.ttc-carousel::-webkit-scrollbar{height:3px}
+.ttc-carousel::-webkit-scrollbar-thumb{background:var(--rce-accent);border-radius:2px}
 
 /* ──────────── LEAD FORM ──────────── */
-.rce-form{
+.ttc-form{
   background:var(--rce-bg2);border-radius:14px;
   border:1px solid var(--rce-border);padding:16px;max-width:300px;
 }
-.rce-form-title{
+.ttc-form-title{
   font-family:var(--rce-font);font-size:14px;font-weight:700;color:var(--rce-text);
   margin-bottom:14px;display:flex;align-items:center;gap:8px;
 }
-.rce-form-title svg{width:16px;height:16px;color:var(--rce-accent)}
+.ttc-form-title svg{width:16px;height:16px;color:var(--rce-accent)}
 
-.rce-field{margin-bottom:10px}
-.rce-label{
+.ttc-field{margin-bottom:10px}
+.ttc-label{
   display:block;font-family:var(--rce-font);font-size:10.5px;font-weight:700;
   color:var(--rce-text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;
 }
-.rce-input,.rce-select,.rce-textarea{
+.ttc-input,.ttc-select,.ttc-textarea{
   width:100%;padding:8px 12px;border-radius:8px;
   border:1.5px solid var(--rce-border);background:var(--rce-bg);
   color:var(--rce-text);font-family:var(--rce-font);font-size:13px;
   outline:none;transition:border-color .2s;
 }
-.rce-textarea{resize:vertical;min-height:60px}
-.rce-input:focus,.rce-select:focus,.rce-textarea:focus{border-color:var(--rce-accent)}
-.rce-input::placeholder,.rce-textarea::placeholder{color:var(--rce-muted)}
-.rce-input.rce-err,.rce-select.rce-err{border-color:#ef4444}
-.rce-ferr{font-family:var(--rce-font);font-size:11px;color:#ef4444;margin-top:3px}
+.ttc-textarea{resize:vertical;min-height:60px}
+.ttc-input:focus,.ttc-select:focus,.ttc-textarea:focus{border-color:var(--rce-accent)}
+.ttc-input::placeholder,.ttc-textarea::placeholder{color:var(--rce-muted)}
+.ttc-input.ttc-err,.ttc-select.ttc-err{border-color:#ef4444}
+.ttc-ferr{font-family:var(--rce-font);font-size:11px;color:#ef4444;margin-top:3px}
 
-.rce-consent{display:flex;gap:9px;align-items:flex-start;margin-bottom:12px}
-.rce-consent input[type=checkbox]{accent-color:var(--rce-accent);width:14px;height:14px;flex-shrink:0;margin-top:1px;cursor:pointer}
-.rce-consent-lbl{font-family:var(--rce-font);font-size:11px;color:var(--rce-text2);line-height:1.5}
+.ttc-consent{display:flex;gap:9px;align-items:flex-start;margin-bottom:12px}
+.ttc-consent input[type=checkbox]{accent-color:var(--rce-accent);width:14px;height:14px;flex-shrink:0;margin-top:1px;cursor:pointer}
+.ttc-consent-lbl{font-family:var(--rce-font);font-size:11px;color:var(--rce-text2);line-height:1.5}
 
-.rce-form-ok{text-align:center;padding:12px 8px;font-family:var(--rce-font);font-size:13px;color:#22c55e;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:8px}
-.rce-form-ok svg{width:28px;height:28px;color:#22c55e}
+.ttc-form-ok{text-align:center;padding:12px 8px;font-family:var(--rce-font);font-size:13px;color:#22c55e;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:8px}
+.ttc-form-ok svg{width:28px;height:28px;color:#22c55e}
 
 /* ──────────── HANDOFF ──────────── */
-.rce-handoff{
+.ttc-handoff{
   display:flex;flex-direction:column;align-items:center;gap:10px;
   padding:18px;background:rgba(var(--rce-accent-rgb),.05);
   border-radius:14px;border:1px solid rgba(var(--rce-accent-rgb),.2);max-width:260px;
 }
-.rce-handoff-icon{
+.ttc-handoff-icon{
   width:42px;height:42px;border-radius:50%;
   background:linear-gradient(135deg,var(--rce-accent),rgba(var(--rce-accent-rgb),.7));
   display:flex;align-items:center;justify-content:center;
   animation:rce-handoff-pulse 2s infinite;
 }
-.rce-handoff-icon svg{width:20px;height:20px;color:var(--rce-primary)}
-.rce-handoff-text{font-family:var(--rce-font);font-size:13px;color:var(--rce-text2);text-align:center;line-height:1.5}
+.ttc-handoff-icon svg{width:20px;height:20px;color:var(--rce-primary)}
+.ttc-handoff-text{font-family:var(--rce-font);font-size:13px;color:var(--rce-text2);text-align:center;line-height:1.5}
 
 /* ──────────── ERROR MSG ──────────── */
-.rce-errmsg{
+.ttc-errmsg{
   display:flex;align-items:flex-start;gap:8px;padding:10px 14px;
   background:rgba(239,68,68,.07);border-radius:12px;
   border:1px solid rgba(239,68,68,.2);max-width:270px;
 }
-.rce-errmsg svg{width:16px;height:16px;color:#ef4444;flex-shrink:0;margin-top:1px}
-.rce-errmsg-text{font-family:var(--rce-font);font-size:13px;color:#ef4444;line-height:1.5}
+.ttc-errmsg svg{width:16px;height:16px;color:#ef4444;flex-shrink:0;margin-top:1px}
+.ttc-errmsg-text{font-family:var(--rce-font);font-size:13px;color:#ef4444;line-height:1.5}
 
 /* ──────────── INPUT AREA ──────────── */
-.rce-input-area{
+.ttc-input-area{
   padding:12px 14px;background:var(--rce-bg);
   border-top:1px solid var(--rce-border);
   display:flex;flex-direction:column;gap:8px;flex-shrink:0;
 }
-.rce-input-row{display:flex;align-items:flex-end;gap:8px}
-.rce-textarea-msg{
+.ttc-input-row{display:flex;align-items:flex-end;gap:8px}
+.ttc-textarea-msg{
   flex:1;min-height:40px;max-height:120px;padding:10px 14px;
   border-radius:20px;border:1.5px solid var(--rce-border);
   background:var(--rce-input-bg);color:var(--rce-text);
@@ -1144,53 +1144,53 @@
   outline:none;transition:border-color .2s;line-height:1.4;
   overflow-y:auto;
 }
-.rce-textarea-msg:focus{border-color:var(--rce-accent)}
-.rce-textarea-msg::placeholder{color:var(--rce-muted)}
-.rce-textarea-msg:disabled{opacity:.5;cursor:not-allowed}
+.ttc-textarea-msg:focus{border-color:var(--rce-accent)}
+.ttc-textarea-msg::placeholder{color:var(--rce-muted)}
+.ttc-textarea-msg:disabled{opacity:.5;cursor:not-allowed}
 
-.rce-send{
+.ttc-send{
   width:42px;height:42px;border-radius:50%;border:none;
   background:linear-gradient(135deg,var(--rce-accent),rgba(var(--rce-accent-rgb),.8));
   color:var(--rce-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;
   transition:all .2s;flex-shrink:0;outline:none;
   box-shadow:0 3px 10px rgba(var(--rce-accent-rgb),.35);
 }
-.rce-send:hover:not(:disabled){transform:scale(1.08);box-shadow:0 5px 14px rgba(var(--rce-accent-rgb),.45)}
-.rce-send:disabled{opacity:.4;cursor:not-allowed}
-.rce-send:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
-.rce-send svg{width:18px;height:18px}
+.ttc-send:hover:not(:disabled){transform:scale(1.08);box-shadow:0 5px 14px rgba(var(--rce-accent-rgb),.45)}
+.ttc-send:disabled{opacity:.4;cursor:not-allowed}
+.ttc-send:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
+.ttc-send svg{width:18px;height:18px}
 
-.rce-footer{display:flex;align-items:center;justify-content:space-between}
-.rce-powered{font-family:var(--rce-font);font-size:10px;color:var(--rce-muted);opacity:.6}
-.rce-char{font-family:var(--rce-font);font-size:10px;color:var(--rce-muted)}
-.rce-char.rce-over{color:#ef4444}
+.ttc-footer{display:flex;align-items:center;justify-content:space-between}
+.ttc-powered{font-family:var(--rce-font);font-size:10px;color:var(--rce-muted);opacity:.6}
+.ttc-char{font-family:var(--rce-font);font-size:10px;color:var(--rce-muted)}
+.ttc-char.ttc-over{color:#ef4444}
 
 /* ──────────── WELCOME / EMPTY STATE ──────────── */
-.rce-welcome{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:24px 16px 8px;animation:rce-msgIn .4s ease}
-.rce-welcome-logo{
+.ttc-welcome{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:24px 16px 8px;animation:rce-msgIn .4s ease}
+.ttc-welcome-logo{
   width:60px;height:60px;border-radius:18px;overflow:hidden;
   border:2px solid var(--rce-accent);
   background:linear-gradient(135deg,var(--rce-primary),rgba(var(--rce-primary-rgb),.7));
   display:flex;align-items:center;justify-content:center;
 }
-.rce-welcome-logo img{width:100%;height:100%;object-fit:cover}
-.rce-welcome-logo svg{width:30px;height:30px;color:var(--rce-accent)}
-.rce-welcome-title{font-family:var(--rce-font);font-size:17px;font-weight:800;color:var(--rce-text)}
-.rce-welcome-msg{font-family:var(--rce-font);font-size:13.5px;color:var(--rce-text2);line-height:1.6;max-width:240px}
-.rce-suggested{display:flex;flex-direction:column;gap:7px;width:100%;margin-top:4px}
-.rce-sug-btn{
+.ttc-welcome-logo img{width:100%;height:100%;object-fit:cover}
+.ttc-welcome-logo svg{width:30px;height:30px;color:var(--rce-accent)}
+.ttc-welcome-title{font-family:var(--rce-font);font-size:17px;font-weight:800;color:var(--rce-text)}
+.ttc-welcome-msg{font-family:var(--rce-font);font-size:13.5px;color:var(--rce-text2);line-height:1.6;max-width:240px}
+.ttc-suggested{display:flex;flex-direction:column;gap:7px;width:100%;margin-top:4px}
+.ttc-sug-btn{
   width:100%;padding:10px 14px;border-radius:10px;
   border:1.5px solid var(--rce-border);background:var(--rce-bg2);
   color:var(--rce-text);font-family:var(--rce-font);font-size:13px;font-weight:500;
   cursor:pointer;transition:all .2s;text-align:left;display:flex;align-items:center;gap:8px;outline:none;
 }
-.rce-sug-btn:hover{background:rgba(var(--rce-accent-rgb),.07);border-color:var(--rce-accent);transform:translateX(2px)}
-.rce-sug-btn:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
-.rce-sug-arrow{margin-left:auto;color:var(--rce-accent);flex-shrink:0}
-.rce-sug-arrow svg{width:13px;height:13px}
+.ttc-sug-btn:hover{background:rgba(var(--rce-accent-rgb),.07);border-color:var(--rce-accent);transform:translateX(2px)}
+.ttc-sug-btn:focus-visible{outline:2px solid var(--rce-accent);outline-offset:2px}
+.ttc-sug-arrow{margin-left:auto;color:var(--rce-accent);flex-shrink:0}
+.ttc-sug-arrow svg{width:13px;height:13px}
 
 /* ──────────── BUSINESS HOURS NOTICE ──────────── */
-.rce-hours-notice{
+.ttc-hours-notice{
   margin:0 14px 10px;padding:9px 14px;
   background:rgba(var(--rce-accent-rgb),.07);
   border:1px solid rgba(var(--rce-accent-rgb),.2);
@@ -1199,15 +1199,15 @@
 }
 
 /* ──────────── DEBUG PANEL ──────────── */
-.rce-debug{
+.ttc-debug{
   background:#0d1117;border-top:1px solid #30363d;
   padding:8px 12px;max-height:150px;overflow-y:auto;flex-shrink:0;
 }
-.rce-debug-title{font-family:monospace;font-size:10px;font-weight:700;color:#58a6ff;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
-.rce-debug-entry{font-family:monospace;font-size:10px;line-height:1.6;border-bottom:1px solid #21262d;padding-bottom:4px;margin-bottom:4px}
-.rce-debug-entry:last-child{border-bottom:none}
-.rce-dl{color:#8b949e}.rce-dv{color:#e6edf3;word-break:break-all}
-.rce-d-ok{color:#3fb950}.rce-d-err{color:#f85149}.rce-d-info{color:#58a6ff}.rce-d-ms{color:#d29922}
+.ttc-debug-title{font-family:monospace;font-size:10px;font-weight:700;color:#58a6ff;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.ttc-debug-entry{font-family:monospace;font-size:10px;line-height:1.6;border-bottom:1px solid #21262d;padding-bottom:4px;margin-bottom:4px}
+.ttc-debug-entry:last-child{border-bottom:none}
+.ttc-dl{color:#8b949e}.ttc-dv{color:#e6edf3;word-break:break-all}
+.ttc-d-ok{color:#3fb950}.ttc-d-err{color:#f85149}.ttc-d-info{color:#58a6ff}.ttc-d-ms{color:#d29922}
 
 /* ──────────── ANIMATIONS ──────────── */
 @keyframes rce-msgIn{from{opacity:0;transform:translateY(10px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -1217,8 +1217,8 @@
 @keyframes rce-handoff-pulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--rce-accent-rgb),.45)}50%{box-shadow:0 0 0 12px rgba(var(--rce-accent-rgb),0)}}
 
 /* ──────────── REDIRECT MSG ──────────── */
-.rce-redirect{display:flex;flex-direction:column;gap:8px;max-width:280px}
-.rce-redirect-text{font-family:var(--rce-font);font-size:13px;color:var(--rce-text2)}
+.ttc-redirect{display:flex;flex-direction:column;gap:8px;max-width:280px}
+.ttc-redirect-text{font-family:var(--rce-font);font-size:13px;color:var(--rce-text2)}
 
 /* ──────────── ACCESSIBILITY ──────────── */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
@@ -1248,7 +1248,7 @@
      */
     text(msg) {
       const el = document.createElement('div');
-      el.className = 'rce-bubble rce-bot';
+      el.className = 'ttc-bubble rce-bot';
       el.textContent = msg.content || '';
       return el;
     },
@@ -1258,7 +1258,7 @@
      */
     markdown(msg) {
       const el = document.createElement('div');
-      el.className = 'rce-bubble rce-bot';
+      el.className = 'ttc-bubble rce-bot';
       el.innerHTML = MarkdownParser.parse(msg.content || '');
       return el;
     },
@@ -1271,17 +1271,17 @@
       if (!items.length) return null;
 
       const wrap = document.createElement('div');
-      wrap.className = 'rce-qrs';
+      wrap.className = 'ttc-qrs';
       wrap.setAttribute('role', 'group');
       wrap.setAttribute('aria-label', 'Quick reply options');
 
       items.forEach((item) => {
         const btn = document.createElement('button');
-        btn.className = 'rce-qr';
+        btn.className = 'ttc-qr';
         btn.textContent = item.label || item.value || '';
         btn.setAttribute('aria-label', `Quick reply: ${item.label || item.value}`);
         btn.addEventListener('click', () => {
-          wrap.querySelectorAll('.rce-qr').forEach((b) => b.classList.add('rce-used'));
+          wrap.querySelectorAll('.ttc-qr').forEach((b) => b.classList.add('ttc-used'));
           widget.sendMessage(item.value || item.label);
         });
         wrap.appendChild(btn);
@@ -1298,12 +1298,12 @@
       if (!items.length) return null;
 
       const wrap = document.createElement('div');
-      wrap.className = 'rce-btns';
+      wrap.className = 'ttc-btns';
       wrap.setAttribute('role', 'group');
 
       items.forEach((item, i) => {
         const btn = document.createElement(item.url ? 'a' : 'button');
-        btn.className = `rce-btn ${i === 0 ? 'rce-btn-accent' : 'rce-btn-outline'}`;
+        btn.className = `rce-btn ${i === 0 ? 'ttc-btn-accent' : 'ttc-btn-outline'}`;
 
         if (item.url) {
           btn.href = item.url;
@@ -1341,7 +1341,7 @@
       if (!props.length) return null;
 
       const carousel = document.createElement('div');
-      carousel.className = 'rce-carousel';
+      carousel.className = 'ttc-carousel';
       carousel.setAttribute('role', 'list');
       carousel.setAttribute('aria-label', 'Property listings');
 
@@ -1371,7 +1371,7 @@
       if (!trips.length) return null;
 
       const carousel = document.createElement('div');
-      carousel.className = 'rce-carousel';
+      carousel.className = 'ttc-carousel';
       carousel.setAttribute('role', 'list');
       carousel.setAttribute('aria-label', 'Trip recommendations');
 
@@ -1398,16 +1398,16 @@
      */
     handoff(msg) {
       const wrap = document.createElement('div');
-      wrap.className = 'rce-handoff';
+      wrap.className = 'ttc-handoff';
       wrap.setAttribute('role', 'status');
 
       const icon = document.createElement('div');
-      icon.className = 'rce-handoff-icon';
+      icon.className = 'ttc-handoff-icon';
       icon.appendChild(svgEl(Icons.agent));
       wrap.appendChild(icon);
 
       const text = document.createElement('div');
-      text.className = 'rce-handoff-text';
+      text.className = 'ttc-handoff-text';
       text.textContent = msg.message || 'Connecting you to a live agent…';
       wrap.appendChild(text);
 
@@ -1423,18 +1423,18 @@
       }
 
       const wrap = document.createElement('div');
-      wrap.className = 'rce-redirect';
+      wrap.className = 'ttc-redirect';
 
       if (msg.content) {
         const text = document.createElement('div');
-        text.className = 'rce-redirect-text';
+        text.className = 'ttc-redirect-text';
         text.textContent = msg.content;
         wrap.appendChild(text);
       }
 
       if (msg.url) {
         const a = document.createElement('a');
-        a.className = 'rce-btn rce-btn-accent';
+        a.className = 'ttc-btn rce-btn-accent';
         a.href = msg.url;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
@@ -1453,12 +1453,12 @@
      */
     error(msg) {
       const wrap = document.createElement('div');
-      wrap.className = 'rce-errmsg';
+      wrap.className = 'ttc-errmsg';
       wrap.setAttribute('role', 'alert');
       wrap.appendChild(svgEl(Icons.alert));
 
       const text = document.createElement('div');
-      text.className = 'rce-errmsg-text';
+      text.className = 'ttc-errmsg-text';
       text.textContent = msg.content || 'Something went wrong. Please try again.';
       wrap.appendChild(text);
 
@@ -1476,15 +1476,15 @@
     if (!p) return null;
 
     const card = document.createElement('article');
-    card.className = 'rce-card';
+    card.className = 'ttc-card';
 
     // ── Image area ──
     const imgWrap = document.createElement('div');
-    imgWrap.className = 'rce-card-img-wrap';
+    imgWrap.className = 'ttc-card-img-wrap';
 
     if (p.image) {
       const img = document.createElement('img');
-      img.className = 'rce-card-img';
+      img.className = 'ttc-card-img';
       img.alt = p.title || 'Property image';
       img.loading = 'lazy';
       // Use IntersectionObserver for lazy loading
@@ -1494,22 +1494,22 @@
       imgWrap.appendChild(img);
     } else {
       const placeholder = document.createElement('div');
-      placeholder.className = 'rce-card-img-placeholder';
+      placeholder.className = 'ttc-card-img-placeholder';
       placeholder.appendChild(svgEl(Icons.home));
       imgWrap.appendChild(placeholder);
     }
 
     // Status / type badges
     const badges = document.createElement('div');
-    badges.className = 'rce-card-badges';
+    badges.className = 'ttc-card-badges';
 
     if (p.status) {
       const badge = document.createElement('span');
       const statusLower = p.status.toLowerCase().replace(/\s+/g, '-');
-      const cls = statusLower.includes('sale') ? 'rce-cbadge-sale'
-        : statusLower.includes('rent') ? 'rce-cbadge-rent'
-        : statusLower.includes('sold') ? 'rce-cbadge-sold'
-        : 'rce-cbadge-type';
+      const cls = statusLower.includes('sale') ? 'ttc-cbadge-sale'
+        : statusLower.includes('rent') ? 'ttc-cbadge-rent'
+        : statusLower.includes('sold') ? 'ttc-cbadge-sold'
+        : 'ttc-cbadge-type';
       badge.className = `rce-cbadge ${cls}`;
       badge.textContent = p.status;
       badges.appendChild(badge);
@@ -1517,7 +1517,7 @@
 
     if (p.type) {
       const typeBadge = document.createElement('span');
-      typeBadge.className = 'rce-cbadge rce-cbadge-type';
+      typeBadge.className = 'ttc-cbadge rce-cbadge-type';
       typeBadge.textContent = p.type;
       badges.appendChild(typeBadge);
     }
@@ -1527,12 +1527,12 @@
 
     // ── Body ──
     const body = document.createElement('div');
-    body.className = 'rce-card-body';
+    body.className = 'ttc-card-body';
 
     // Price
     if (p.price !== undefined && p.price !== null) {
       const price = document.createElement('div');
-      price.className = 'rce-card-price';
+      price.className = 'ttc-card-price';
       const numPrice = parseFloat(String(p.price).replace(/[^0-9.]/g, ''));
       price.textContent = isNaN(numPrice)
         ? String(p.price)
@@ -1543,7 +1543,7 @@
     // Title
     if (p.title) {
       const title = document.createElement('div');
-      title.className = 'rce-card-title';
+      title.className = 'ttc-card-title';
       title.textContent = p.title;
       title.title = p.title;
       body.appendChild(title);
@@ -1552,7 +1552,7 @@
     // Address
     if (p.address) {
       const addr = document.createElement('div');
-      addr.className = 'rce-card-addr';
+      addr.className = 'ttc-card-addr';
       addr.appendChild(svgEl(Icons.location));
       const addrText = document.createElement('span');
       addrText.textContent = p.address;
@@ -1569,10 +1569,10 @@
 
     if (stats.length) {
       const statsRow = document.createElement('div');
-      statsRow.className = 'rce-card-stats';
+      statsRow.className = 'ttc-card-stats';
       stats.forEach((s) => {
         const stat = document.createElement('div');
-        stat.className = 'rce-stat';
+        stat.className = 'ttc-stat';
         stat.appendChild(svgEl(s.icon));
         const v = document.createElement('span');
         v.textContent = s.val;
@@ -1585,18 +1585,18 @@
     // Description
     if (p.description) {
       const desc = document.createElement('div');
-      desc.className = 'rce-card-desc';
+      desc.className = 'ttc-card-desc';
       desc.textContent = p.description;
       body.appendChild(desc);
     }
 
     // Action buttons
     const actions = document.createElement('div');
-    actions.className = 'rce-card-actions';
+    actions.className = 'ttc-card-actions';
 
     if (p.url) {
       const viewBtn = document.createElement('a');
-      viewBtn.className = 'rce-btn rce-btn-outline';
+      viewBtn.className = 'ttc-btn rce-btn-outline';
       viewBtn.href = p.url;
       viewBtn.target = '_blank';
       viewBtn.rel = 'noopener noreferrer';
@@ -1610,7 +1610,7 @@
 
     if (widget._config.bookingUrl) {
       const bookBtn = document.createElement('a');
-      bookBtn.className = 'rce-btn rce-btn-accent';
+      bookBtn.className = 'ttc-btn rce-btn-accent';
       bookBtn.href = widget._config.bookingUrl;
       bookBtn.target = '_blank';
       bookBtn.rel = 'noopener noreferrer';
@@ -1639,15 +1639,15 @@
     if (!t) return null;
 
     const card = document.createElement('article');
-    card.className = 'rce-card';
+    card.className = 'ttc-card';
 
     // ── Image area ──
     const imgWrap = document.createElement('div');
-    imgWrap.className = 'rce-card-img-wrap';
+    imgWrap.className = 'ttc-card-img-wrap';
 
     if (t.image) {
       const img = document.createElement('img');
-      img.className = 'rce-card-img';
+      img.className = 'ttc-card-img';
       img.alt = t.title || 'Trip image';
       img.loading = 'lazy';
       img.dataset.src = t.image;
@@ -1656,25 +1656,25 @@
       imgWrap.appendChild(img);
     } else {
       const placeholder = document.createElement('div');
-      placeholder.className = 'rce-card-img-placeholder';
+      placeholder.className = 'ttc-card-img-placeholder';
       placeholder.appendChild(svgEl(Icons.plane));
       imgWrap.appendChild(placeholder);
     }
 
     // Badges: trip type (Flight/Hotel/Cruise/Package) and a promo tag
     const badges = document.createElement('div');
-    badges.className = 'rce-card-badges';
+    badges.className = 'ttc-card-badges';
 
     if (t.type) {
       const typeBadge = document.createElement('span');
-      typeBadge.className = 'rce-cbadge rce-cbadge-type';
+      typeBadge.className = 'ttc-cbadge rce-cbadge-type';
       typeBadge.textContent = t.type;
       badges.appendChild(typeBadge);
     }
 
     if (t.tag) {
       const tagBadge = document.createElement('span');
-      tagBadge.className = 'rce-cbadge rce-cbadge-sale';
+      tagBadge.className = 'ttc-cbadge rce-cbadge-sale';
       tagBadge.textContent = t.tag;
       badges.appendChild(tagBadge);
     }
@@ -1684,12 +1684,12 @@
 
     // ── Body ──
     const body = document.createElement('div');
-    body.className = 'rce-card-body';
+    body.className = 'ttc-card-body';
 
     // Price
     if (t.price !== undefined && t.price !== null) {
       const price = document.createElement('div');
-      price.className = 'rce-card-price';
+      price.className = 'ttc-card-price';
       const numPrice = parseFloat(String(t.price).replace(/[^0-9.]/g, ''));
       const priceText = isNaN(numPrice)
         ? String(t.price)
@@ -1701,7 +1701,7 @@
     // Title
     if (t.title) {
       const title = document.createElement('div');
-      title.className = 'rce-card-title';
+      title.className = 'ttc-card-title';
       title.textContent = t.title;
       title.title = t.title;
       body.appendChild(title);
@@ -1710,7 +1710,7 @@
     // Location
     if (t.location) {
       const addr = document.createElement('div');
-      addr.className = 'rce-card-addr';
+      addr.className = 'ttc-card-addr';
       addr.appendChild(svgEl(Icons.location));
       const addrText = document.createElement('span');
       addrText.textContent = t.location;
@@ -1726,10 +1726,10 @@
 
     if (stats.length) {
       const statsRow = document.createElement('div');
-      statsRow.className = 'rce-card-stats';
+      statsRow.className = 'ttc-card-stats';
       stats.forEach((s) => {
         const stat = document.createElement('div');
-        stat.className = 'rce-stat';
+        stat.className = 'ttc-stat';
         stat.appendChild(svgEl(s.icon));
         const v = document.createElement('span');
         v.textContent = s.val;
@@ -1742,18 +1742,18 @@
     // Description
     if (t.description) {
       const desc = document.createElement('div');
-      desc.className = 'rce-card-desc';
+      desc.className = 'ttc-card-desc';
       desc.textContent = t.description;
       body.appendChild(desc);
     }
 
     // Action buttons
     const actions = document.createElement('div');
-    actions.className = 'rce-card-actions';
+    actions.className = 'ttc-card-actions';
 
     if (t.url) {
       const viewBtn = document.createElement('a');
-      viewBtn.className = 'rce-btn rce-btn-outline';
+      viewBtn.className = 'ttc-btn rce-btn-outline';
       viewBtn.href = t.url;
       viewBtn.target = '_blank';
       viewBtn.rel = 'noopener noreferrer';
@@ -1767,7 +1767,7 @@
 
     if (widget._config.bookingUrl) {
       const bookBtn = document.createElement('a');
-      bookBtn.className = 'rce-btn rce-btn-accent';
+      bookBtn.className = 'ttc-btn rce-btn-accent';
       bookBtn.href = widget._config.bookingUrl;
       bookBtn.target = '_blank';
       bookBtn.rel = 'noopener noreferrer';
@@ -1820,12 +1820,12 @@
       .filter((f) => allowedFields.includes(f));
 
     const form = document.createElement('div');
-    form.className = 'rce-form';
+    form.className = 'ttc-form';
     form.setAttribute('role', 'form');
     form.setAttribute('aria-label', 'Lead capture form');
 
     const titleRow = document.createElement('div');
-    titleRow.className = 'rce-form-title';
+    titleRow.className = 'ttc-form-title';
     titleRow.appendChild(svgEl(Icons.contact));
     const titleTxt = document.createElement('span');
     titleTxt.textContent = msg.title || 'Get in Touch';
@@ -1849,10 +1849,10 @@
       if (!def) return;
 
       const fieldWrap = document.createElement('div');
-      fieldWrap.className = 'rce-field';
+      fieldWrap.className = 'ttc-field';
 
       const label = document.createElement('label');
-      label.className = 'rce-label';
+      label.className = 'ttc-label';
       label.textContent = def.label + (def.required ? ' *' : '');
       const inputId = `rce-field-${f}`;
       label.setAttribute('for', inputId);
@@ -1861,7 +1861,7 @@
       let input;
       if (def.type === 'select') {
         input = document.createElement('select');
-        input.className = 'rce-select';
+        input.className = 'ttc-select';
         const placeholder = document.createElement('option');
         placeholder.value = '';
         placeholder.textContent = 'Select an option';
@@ -1874,12 +1874,12 @@
         });
       } else if (def.type === 'textarea') {
         input = document.createElement('textarea');
-        input.className = 'rce-textarea';
+        input.className = 'ttc-textarea';
         input.placeholder = def.placeholder || '';
         input.rows = 3;
       } else {
         input = document.createElement('input');
-        input.className = 'rce-input';
+        input.className = 'ttc-input';
         input.type = def.type;
         input.placeholder = def.placeholder || '';
         input.autocomplete = f === 'email' ? 'email' : f === 'name' ? 'name' : f === 'phone' ? 'tel' : 'off';
@@ -1890,7 +1890,7 @@
       if (def.required) input.required = true;
 
       const errEl = document.createElement('div');
-      errEl.className = 'rce-ferr';
+      errEl.className = 'ttc-ferr';
       errEl.setAttribute('role', 'alert');
       errEl.setAttribute('aria-live', 'polite');
 
@@ -1902,14 +1902,14 @@
 
     // GDPR consent
     const consentWrap = document.createElement('div');
-    consentWrap.className = 'rce-consent';
+    consentWrap.className = 'ttc-consent';
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.id = 'rce-consent';
+    checkbox.id = 'ttc-consent';
     checkbox.required = true;
     const consentLbl = document.createElement('label');
-    consentLbl.className = 'rce-consent-lbl';
-    consentLbl.setAttribute('for', 'rce-consent');
+    consentLbl.className = 'ttc-consent-lbl';
+    consentLbl.setAttribute('for', 'ttc-consent');
     consentLbl.textContent = `I agree to be contacted by ${widget._config.agencyName} regarding my enquiry.`;
     consentWrap.appendChild(checkbox);
     consentWrap.appendChild(consentLbl);
@@ -1917,13 +1917,13 @@
 
     // Submit button
     const submitBtn = document.createElement('button');
-    submitBtn.className = 'rce-btn rce-btn-accent';
+    submitBtn.className = 'ttc-btn rce-btn-accent';
     submitBtn.style.width = '100%';
     submitBtn.style.marginTop = '4px';
     submitBtn.textContent = msg.submitLabel || 'Send Enquiry';
 
     const consentErr = document.createElement('div');
-    consentErr.className = 'rce-ferr';
+    consentErr.className = 'ttc-ferr';
     consentErr.setAttribute('role', 'alert');
 
     form.appendChild(submitBtn);
@@ -1936,15 +1936,15 @@
       // Validate fields
       for (const [, { input: inp, errEl, def }] of Object.entries(inputEls)) {
         errEl.textContent = '';
-        inp.classList.remove('rce-err');
+        inp.classList.remove('ttc-err');
         const val = inp.value.trim();
         if (def.required && !val) {
           errEl.textContent = `${def.label} is required.`;
-          inp.classList.add('rce-err');
+          inp.classList.add('ttc-err');
           valid = false;
         } else if (def.type === 'email' && val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
           errEl.textContent = 'Please enter a valid email address.';
-          inp.classList.add('rce-err');
+          inp.classList.add('ttc-err');
           valid = false;
         }
       }
@@ -1976,7 +1976,7 @@
         // Show success state
         form.innerHTML = '';
         const ok = document.createElement('div');
-        ok.className = 'rce-form-ok';
+        ok.className = 'ttc-form-ok';
         ok.appendChild(svgEl(Icons.check));
         const okText = document.createElement('span');
         okText.textContent = "Thanks! We'll be in touch soon.";
@@ -2008,9 +2008,9 @@
 
     function _row(label, value, cls = '') {
       const entry = document.createElement('div');
-      entry.className = 'rce-debug-entry';
+      entry.className = 'ttc-debug-entry';
       const lEl = document.createElement('span');
-      lEl.className = 'rce-dl';
+      lEl.className = 'ttc-dl';
       lEl.textContent = `[${label}] `;
       const vEl = document.createElement('span');
       vEl.className = `rce-dv ${cls}`;
@@ -2026,10 +2026,10 @@
      * @returns {HTMLElement}
      */
     function mount(shadow) {
-      _el = shadow.querySelector('.rce-debug');
+      _el = shadow.querySelector('.ttc-debug');
       if (!_el) return null;
       const title = document.createElement('div');
-      title.className = 'rce-debug-title';
+      title.className = 'ttc-debug-title';
       title.textContent = `🛠 Debug — Widget v${VERSION}`;
       _el.appendChild(title);
       return _el;
@@ -2043,7 +2043,7 @@
      */
     function log(label, value, type = 'info') {
       if (!_el) return;
-      const cls = type === 'ok' ? 'rce-d-ok' : type === 'err' ? 'rce-d-err' : type === 'ms' ? 'rce-d-ms' : 'rce-d-info';
+      const cls = type === 'ok' ? 'ttc-d-ok' : type === 'err' ? 'ttc-d-err' : type === 'ms' ? 'ttc-d-ms' : 'ttc-d-info';
       const row = _row(label, value, cls);
       _entries.push(row);
       if (_entries.length > MAX_ENTRIES) {
@@ -2122,7 +2122,7 @@
     /** Mount the widget into the page. */
     mount() {
       this._host = document.createElement('div');
-      this._host.id = 'rce-widget-root';
+      this._host.id = 'ttc-widget-root';
       this._host.setAttribute('aria-label', 'Chat widget');
       document.body.appendChild(this._host);
 
@@ -2211,12 +2211,12 @@
       this._launcher.setAttribute('aria-expanded', 'false');
 
       this._chatIcon = svgEl(Icons.chat);
-      this._chatIcon.setAttribute('class', 'rce-launcher-icon');
+      this._chatIcon.setAttribute('class', 'ttc-launcher-icon');
       this._closeIcon = svgEl(Icons.close);
-      this._closeIcon.setAttribute('class', 'rce-launcher-icon rce-hidden');
+      this._closeIcon.setAttribute('class', 'ttc-launcher-icon rce-hidden');
 
       this._badge = document.createElement('span');
-      this._badge.className = 'rce-badge rce-hidden';
+      this._badge.className = 'ttc-badge rce-hidden';
       this._badge.setAttribute('aria-label', '0 unread messages');
 
       this._launcher.appendChild(this._chatIcon);
@@ -2235,7 +2235,7 @@
 
       // Messages
       this._msgs = document.createElement('div');
-      this._msgs.className = 'rce-msgs';
+      this._msgs.className = 'ttc-msgs';
       this._msgs.setAttribute('role', 'log');
       this._msgs.setAttribute('aria-live', 'polite');
       this._msgs.setAttribute('aria-label', 'Conversation');
@@ -2244,7 +2244,7 @@
       // Business hours notice
       if (!BusinessHours.isOpen(this._config.businessHours)) {
         const notice = document.createElement('div');
-        notice.className = 'rce-hours-notice';
+        notice.className = 'ttc-hours-notice';
         notice.textContent = "We're currently outside business hours. Leave a message and we'll get back to you.";
         this._panel.appendChild(notice);
       }
@@ -2254,7 +2254,7 @@
       // Debug panel (only if debug: true)
       if (this._config.debug) {
         const debugEl = document.createElement('div');
-        debugEl.className = 'rce-debug';
+        debugEl.className = 'ttc-debug';
         this._panel.appendChild(debugEl);
       }
 
@@ -2263,11 +2263,11 @@
 
     _buildHeader() {
       const header = document.createElement('header');
-      header.className = 'rce-header';
+      header.className = 'ttc-header';
 
       // Avatar
       const avatar = document.createElement('div');
-      avatar.className = 'rce-avatar';
+      avatar.className = 'ttc-avatar';
       if (this._config.avatar) {
         const img = document.createElement('img');
         img.src = this._config.avatar;
@@ -2280,17 +2280,17 @@
 
       // Info
       const info = document.createElement('div');
-      info.className = 'rce-header-info';
+      info.className = 'ttc-header-info';
 
       const name = document.createElement('div');
-      name.className = 'rce-agent-name';
+      name.className = 'ttc-agent-name';
       name.textContent = this._config.assistantName;
       info.appendChild(name);
 
       const status = document.createElement('div');
-      status.className = 'rce-status';
+      status.className = 'ttc-status';
       const dot = document.createElement('span');
-      dot.className = 'rce-status-dot';
+      dot.className = 'ttc-status-dot';
       status.appendChild(dot);
       const statusText = document.createElement('span');
       statusText.textContent = BusinessHours.isOpen(this._config.businessHours)
@@ -2302,10 +2302,10 @@
 
       // Header action buttons
       const actions = document.createElement('div');
-      actions.className = 'rce-header-actions';
+      actions.className = 'ttc-header-actions';
 
       const restartBtn = document.createElement('button');
-      restartBtn.className = 'rce-hbtn';
+      restartBtn.className = 'ttc-hbtn';
       restartBtn.setAttribute('aria-label', 'Restart conversation');
       restartBtn.title = 'Restart conversation';
       restartBtn.appendChild(svgEl(Icons.restart));
@@ -2313,7 +2313,7 @@
       actions.appendChild(restartBtn);
 
       const closeBtn = document.createElement('button');
-      closeBtn.className = 'rce-hbtn';
+      closeBtn.className = 'ttc-hbtn';
       closeBtn.setAttribute('aria-label', 'Close chat');
       closeBtn.title = 'Close chat';
       closeBtn.appendChild(svgEl(Icons.close));
@@ -2326,13 +2326,13 @@
 
     _buildInputArea() {
       const area = document.createElement('div');
-      area.className = 'rce-input-area';
+      area.className = 'ttc-input-area';
 
       const row = document.createElement('div');
-      row.className = 'rce-input-row';
+      row.className = 'ttc-input-row';
 
       this._textarea = document.createElement('textarea');
-      this._textarea.className = 'rce-textarea-msg';
+      this._textarea.className = 'ttc-textarea-msg';
       this._textarea.placeholder = 'Type a message…';
       this._textarea.rows = 1;
       this._textarea.setAttribute('aria-label', 'Message input');
@@ -2340,7 +2340,7 @@
       this._textarea.setAttribute('maxlength', MAX_INPUT_LENGTH);
 
       this._sendBtn = document.createElement('button');
-      this._sendBtn.className = 'rce-send';
+      this._sendBtn.className = 'ttc-send';
       this._sendBtn.setAttribute('aria-label', 'Send message');
       this._sendBtn.appendChild(svgEl(Icons.send));
 
@@ -2349,17 +2349,17 @@
       area.appendChild(row);
 
       const footer = document.createElement('div');
-      footer.className = 'rce-footer';
+      footer.className = 'ttc-footer';
 
       if (this._config.poweredBy) {
         const powered = document.createElement('span');
-        powered.className = 'rce-powered';
+        powered.className = 'ttc-powered';
         powered.textContent = `${this._config.agencyName} AI Assistant`;
         footer.appendChild(powered);
       }
 
       const charCount = document.createElement('span');
-      charCount.className = 'rce-char';
+      charCount.className = 'ttc-char';
       charCount.setAttribute('aria-live', 'polite');
       footer.appendChild(charCount);
 
@@ -2449,7 +2449,7 @@
       const len = this._textarea.value.length;
       if (len > MAX_INPUT_LENGTH * 0.8) {
         this._charCountEl.textContent = `${len}/${MAX_INPUT_LENGTH}`;
-        this._charCountEl.classList.toggle('rce-over', len >= MAX_INPUT_LENGTH);
+        this._charCountEl.classList.toggle('ttc-over', len >= MAX_INPUT_LENGTH);
       } else {
         this._charCountEl.textContent = '';
       }
@@ -2459,9 +2459,9 @@
 
     open() {
       this._open = true;
-      this._panel.classList.add('rce-open');
-      this._chatIcon.classList.add('rce-hidden');
-      this._closeIcon.classList.remove('rce-hidden');
+      this._panel.classList.add('ttc-open');
+      this._chatIcon.classList.add('ttc-hidden');
+      this._closeIcon.classList.remove('ttc-hidden');
       this._launcher.setAttribute('aria-expanded', 'true');
       this._launcher.setAttribute('aria-label', 'Close chat');
       this._clearBadge();
@@ -2473,9 +2473,9 @@
 
     close() {
       this._open = false;
-      this._panel.classList.remove('rce-open');
-      this._chatIcon.classList.remove('rce-hidden');
-      this._closeIcon.classList.add('rce-hidden');
+      this._panel.classList.remove('ttc-open');
+      this._chatIcon.classList.remove('ttc-hidden');
+      this._closeIcon.classList.add('ttc-hidden');
       this._launcher.setAttribute('aria-expanded', 'false');
       this._launcher.setAttribute('aria-label', `Open ${this._config.assistantName} chat`);
       this._launcher.focus();
@@ -2541,7 +2541,7 @@
       if (!text || this._handoff) return;
 
       // Clear welcome screen if first message
-      const welcomeEl = this._msgs.querySelector('.rce-welcome');
+      const welcomeEl = this._msgs.querySelector('.ttc-welcome');
       if (welcomeEl) welcomeEl.remove();
 
       // Append user bubble
@@ -2669,11 +2669,11 @@
       if (!node) return;
 
       const row = document.createElement('div');
-      row.className = 'rce-row';
+      row.className = 'ttc-row';
 
       // Avatar
       const av = document.createElement('div');
-      av.className = 'rce-msg-av';
+      av.className = 'ttc-msg-av';
       av.setAttribute('aria-hidden', 'true');
       if (this._config.avatar) {
         const img = document.createElement('img');
@@ -2686,12 +2686,12 @@
       row.appendChild(av);
 
       const body = document.createElement('div');
-      body.className = 'rce-msg-body';
+      body.className = 'ttc-msg-body';
       body.appendChild(node);
 
       // Timestamp
       const ts = document.createElement('div');
-      ts.className = 'rce-ts';
+      ts.className = 'ttc-ts';
       ts.setAttribute('aria-label', `Sent at ${formatTime()}`);
       ts.textContent = formatTime();
       body.appendChild(ts);
@@ -2719,17 +2719,17 @@
      */
     _appendMessage(msg) {
       const row = document.createElement('div');
-      row.className = 'rce-row rce-user';
+      row.className = 'ttc-row rce-user';
 
       const body = document.createElement('div');
-      body.className = 'rce-msg-body';
+      body.className = 'ttc-msg-body';
 
       const bubble = document.createElement('div');
-      bubble.className = 'rce-bubble rce-user';
+      bubble.className = 'ttc-bubble rce-user';
       bubble.textContent = msg.content;
 
       const ts = document.createElement('div');
-      ts.className = 'rce-ts';
+      ts.className = 'ttc-ts';
       ts.textContent = formatTime(new Date(msg.ts));
 
       body.appendChild(bubble);
@@ -2737,7 +2737,7 @@
       row.appendChild(body);
 
       const av = document.createElement('div');
-      av.className = 'rce-msg-av';
+      av.className = 'ttc-msg-av';
       av.setAttribute('aria-hidden', 'true');
       av.appendChild(svgEl(Icons.user));
       row.appendChild(av);
@@ -2762,20 +2762,20 @@
         if (!node) return;
 
         const row = document.createElement('div');
-        row.className = 'rce-row';
+        row.className = 'ttc-row';
 
         const av = document.createElement('div');
-        av.className = 'rce-msg-av';
+        av.className = 'ttc-msg-av';
         av.setAttribute('aria-hidden', 'true');
         av.appendChild(svgEl(Icons.bot));
         row.appendChild(av);
 
         const body = document.createElement('div');
-        body.className = 'rce-msg-body';
+        body.className = 'ttc-msg-body';
         body.appendChild(node);
         if (msg.ts) {
           const ts = document.createElement('div');
-          ts.className = 'rce-ts';
+          ts.className = 'ttc-ts';
           ts.textContent = formatTime(new Date(msg.ts));
           body.appendChild(ts);
         }
@@ -2787,21 +2787,21 @@
     /** Show the three-dot typing indicator and return the row element. */
     _appendTyping() {
       const row = document.createElement('div');
-      row.className = 'rce-row';
+      row.className = 'ttc-row';
 
       const av = document.createElement('div');
-      av.className = 'rce-msg-av';
+      av.className = 'ttc-msg-av';
       av.setAttribute('aria-hidden', 'true');
       av.appendChild(svgEl(Icons.bot));
       row.appendChild(av);
 
       const typing = document.createElement('div');
-      typing.className = 'rce-typing';
+      typing.className = 'ttc-typing';
       typing.setAttribute('role', 'status');
       typing.setAttribute('aria-label', `${this._config.assistantName} is typing`);
       for (let i = 0; i < 3; i++) {
         const dot = document.createElement('span');
-        dot.className = 'rce-dot';
+        dot.className = 'ttc-dot';
         dot.setAttribute('aria-hidden', 'true');
         typing.appendChild(dot);
       }
@@ -2813,11 +2813,11 @@
 
     _renderWelcome() {
       const wrap = document.createElement('div');
-      wrap.className = 'rce-welcome';
+      wrap.className = 'ttc-welcome';
 
       // Logo
       const logo = document.createElement('div');
-      logo.className = 'rce-welcome-logo';
+      logo.className = 'ttc-welcome-logo';
       if (this._config.logo) {
         const img = document.createElement('img');
         img.src = this._config.logo;
@@ -2829,30 +2829,30 @@
       wrap.appendChild(logo);
 
       const title = document.createElement('div');
-      title.className = 'rce-welcome-title';
+      title.className = 'ttc-welcome-title';
       title.textContent = this._config.agencyName;
       wrap.appendChild(title);
 
       const msg = document.createElement('div');
-      msg.className = 'rce-welcome-msg';
+      msg.className = 'ttc-welcome-msg';
       msg.textContent = this._config.welcomeMessage;
       wrap.appendChild(msg);
 
       const questions = this._config.suggestedQuestions || [];
       if (questions.length) {
         const sugWrap = document.createElement('div');
-        sugWrap.className = 'rce-suggested';
+        sugWrap.className = 'ttc-suggested';
         sugWrap.setAttribute('role', 'list');
         questions.forEach((q) => {
           const btn = document.createElement('button');
-          btn.className = 'rce-sug-btn';
+          btn.className = 'ttc-sug-btn';
           btn.setAttribute('role', 'listitem');
           btn.setAttribute('aria-label', `Ask: ${q}`);
           const lbl = document.createElement('span');
           lbl.textContent = q;
           btn.appendChild(lbl);
           const arrow = document.createElement('span');
-          arrow.className = 'rce-sug-arrow';
+          arrow.className = 'ttc-sug-arrow';
           arrow.appendChild(svgEl(Icons.arrow));
           btn.appendChild(arrow);
           btn.addEventListener('click', () => {
@@ -2885,7 +2885,7 @@
     }
 
     _trimMessages() {
-      const rows = this._msgs.querySelectorAll('.rce-row');
+      const rows = this._msgs.querySelectorAll('.ttc-row');
       if (rows.length > MAX_MESSAGES_IN_DOM) {
         rows[0].remove();
       }
@@ -2895,12 +2895,12 @@
       this._unread++;
       this._badge.textContent = this._unread > 99 ? '99+' : String(this._unread);
       this._badge.setAttribute('aria-label', `${this._unread} unread message${this._unread !== 1 ? 's' : ''}`);
-      this._badge.classList.remove('rce-hidden');
+      this._badge.classList.remove('ttc-hidden');
     }
 
     _clearBadge() {
       this._unread = 0;
-      this._badge.classList.add('rce-hidden');
+      this._badge.classList.add('ttc-hidden');
       this._badge.setAttribute('aria-label', '0 unread messages');
     }
   }
@@ -2918,17 +2918,17 @@
    */
   function _guard(method) {
     if (!_instance) {
-      console.warn(`[RealEstateChatbot] Call .init() before .${method}()`);
+      console.warn(`[TayTravelsChatbot] Call .init() before .${method}()`);
       return false;
     }
     return true;
   }
 
   /**
-   * @namespace RealEstateChatbot
+   * @namespace TayTravelsChatbot
    * @description Public JavaScript API for the Real Estate AI Chatbot Widget.
    */
-  const RealEstateChatbot = {
+  const TayTravelsChatbot = {
     /**
      * Initialize and mount the widget.
      * Must be called before any other methods.
@@ -2937,7 +2937,7 @@
      * @returns {void}
      *
      * @example
-     * RealEstateChatbot.init({
+     * TayTravelsChatbot.init({
      *   webhook: 'https://my-n8n.app/webhook/abc',
      *   agencyName: 'Luxury Homes',
      *   assistantName: 'Emma',
@@ -2946,11 +2946,11 @@
      */
     init(userConfig = {}) {
       if (_instance) {
-        console.warn('[RealEstateChatbot] Widget already initialised. Call .destroy() first.');
+        console.warn('[TayTravelsChatbot] Widget already initialised. Call .destroy() first.');
         return;
       }
       if (!userConfig.webhook) {
-        console.error('[RealEstateChatbot] `webhook` URL is required.');
+        console.error('[TayTravelsChatbot] `webhook` URL is required.');
         return;
       }
 
@@ -3073,6 +3073,6 @@
   };
 
   // Expose on window
-  window.RealEstateChatbot = RealEstateChatbot;
+  window.TayTravelsChatbot = TayTravelsChatbot;
 
 })(window, document);
