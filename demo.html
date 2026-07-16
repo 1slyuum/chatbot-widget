@@ -1,68 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Test Page — Widget v2 (Light Theme + Custom Colors)</title>
-<style>
-  body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #ffffff; /* light page background -> widget auto-detects light theme */
-    color: #222;
-  }
-  .hero {
-    padding: 80px 24px;
-    text-align: center;
-  }
-  .hero h1 { font-size: 32px; margin-bottom: 12px; }
-  .hero p { color: #666; font-size: 16px; }
-  .note {
-    max-width: 520px;
-    margin: 40px auto;
-    background: #f7f7f8;
-    border: 1px solid #e5e5e5;
-    border-radius: 12px;
-    padding: 20px;
-    font-size: 14px;
-    line-height: 1.6;
-  }
-  code {
-    background: #eee;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 12px;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Chatbot Demo</title>
+    <!-- Chatbot Widget CSS -->
+    <link rel="stylesheet" href="chatbot-travel_1784207478323.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+        }
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        h1 {
+            color: #0B3D5C;
+            margin-bottom: 16px;
+        }
+        p {
+            line-height: 1.6;
+            color: #666;
+            margin-bottom: 24px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #e1effe;
+            color: #1e429f;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
 
-<div class="hero">
-  <h1>Your website</h1>
-  <p>This page has a light background — the widget should auto-detect and use a light theme, with a teal brand accent.</p>
-</div>
+    <div class="container">
+        <div class="badge">Live Demo</div>
+        <h1>Travel Advisor AI</h1>
+        <p>
+            Welcome to the Travel Advisor AI demo page. This page demonstrates how the chatbot widget 
+            integrates with your website. Look for the chat icon in the bottom right corner to start a conversation!
+        </p>
+        <p>
+            The widget is connected to your n8n workflow at:<br>
+            <code>https://islempharm.app.n8n.cloud/webhook/travel-chatbot</code>
+        </p>
+    </div>
 
-<div class="note">
-  <strong>This demo shows:</strong>
-  <ul>
-    <li><strong>Auto theme detection</strong> — light page background → light widget</li>
-    <li><strong>Custom brand color</strong> — teal (<code>#14b8a6</code>) instead of default gold</li>
-    <li><strong>Custom position</strong> — bottom-left instead of bottom-right</li>
-    <li><strong>Custom bubble radius</strong> — slightly squarer bubbles</li>
-  </ul>
-  <p>Try the <code>data-theme="dark"</code> attribute to force dark mode regardless of page background.</p>
-</div>
-
-<!-- 1. Load the Chatbot Widget Stylesheet -->
- <script src="chatbot-embed.js"
-          data-webhook="https://islempharm.app.n8n.cloud/webhook/travel-chatbot/chat"
-          data-agency-name="Travel Advisor"
-          data-assistant-name="Taje"
-          data-primary="#0B3D5C"
-          data-accent="#F2A93B"
-          data-position="bottom-right"
-          data-welcome-message="Hi! I'm here to help you plan your next trip. Where would you like to go?"
-          data-suggested-questions="Show me vacation deals|I'd like a cruise recommendation|Help me plan a trip"
-          async></script>
-
-  defer></script>
+    <!-- Chatbot Widget JavaScript -->
+    <script src="chatbot-travel_1784207478323.js"></script>
+    
+    <!-- Widget Initialization -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            RealEstateChatbot.init({
+                webhook: 'https://islempharm.app.n8n.cloud/webhook/travel-chatbot',
+                agencyName: 'Travel Advisor',
+                assistantName: 'Alex',
+                theme: {
+                    primary: '#0B3D5C',
+                    accent: '#F2A93B',
+                    mode: 'auto'
+                },
+                welcomeMessage: "Hi! I'm Alex, your Travel Advisor. How can I help you plan your next adventure today?",
+                suggestedQuestions: [
+                    'Show me vacation deals',
+                    'Recommend a cruise',
+                    'Help me plan a trip'
+                ]
+            });
+        });
+    </script>
+</body>
+</html>
