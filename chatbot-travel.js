@@ -1,5 +1,5 @@
 /*!
- * Tay Travels AI Chatbot Widget v1.0.0
+ * Tay Travels AI Chatbot Widget v1.1.0
  * Production-ready AI chatbot for the Tay Travels advisor website.
  * Communicates with any n8n (or compatible) webhook backend.
  *
@@ -29,7 +29,7 @@
   // SECTION 1 · CONSTANTS & DEFAULTS
   // ─────────────────────────────────────────────────────────────────────────────
 
-  const VERSION = '1.0.0';
+  const VERSION = '1.1.0';
   const STORAGE_PREFIX = 'ttc_';
   const MAX_INPUT_LENGTH = 1000;
   const MAX_MESSAGES_IN_DOM = 80;
@@ -656,11 +656,11 @@
      * @param {Object} payload
      * @returns {Promise<Object>}
      */
-    async function send(webhookUrl, payload) {
+    async function send(webhookUrl, payload, { retries = MAX_RETRIES } = {}) {
       const t0 = Date.now();
       let lastErr;
 
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      for (let attempt = 0; attempt <= retries; attempt++) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -694,7 +694,7 @@
           clearTimeout(timer);
           lastErr = err;
           if (err.name === 'AbortError') throw new Error('Request timed out. Please try again.');
-          if (attempt < MAX_RETRIES) await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+          if (attempt < retries) await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
         }
       }
 
@@ -1611,7 +1611,7 @@
         ok.className = 'ttc-form-ok';
         ok.appendChild(svgEl(Icons.check));
         const okText = document.createElement('span');
-        okText.textContent = "Thanks! We'll be in touch soon.";
+        okText.textContent = 'Enquiry sent';
         ok.appendChild(okText);
         form.appendChild(ok);
       } catch {
@@ -1804,9 +1804,12 @@
    */
   function _buildAutoNavButtons(text, widget) {
     if (!text || typeof text !== 'string') return null;
-    for (const rule of AUTO_NAV) {
-      if (rule.keywords.test(text)) {
-        return Renderers.buttons({ items: rule.items }, widget);
+    for (let i = 0; i < AUTO_NAV.length; i++) {
+      if (AUTO_NAV[i].keywords.test(text)) {
+        // Never show the same topic's buttons two messages in a row.
+        if (widget._lastNavTopic === i) return null;
+        widget._lastNavTopic = i;
+        return Renderers.buttons({ items: AUTO_NAV[i].items }, widget);
       }
     }
     return null;
@@ -1913,6 +1916,9 @@
       /** @type {boolean} Whether handoff mode is active */
       this._handoff = false;
 
+      /** @type {number} Index of the last auto-nav topic shown (-1 = none) */
+      this._lastNavTopic = -1;
+
       /** @type {number} Unread message count */
       this._unread = 0;
 
@@ -2009,8 +2015,13 @@
       if (age > this._config.sessionMaxAge) return;
 
       this._visitorInfo = Storage.get('visitor') || null;
+      this._messages = stored.slice();
       stored.forEach((msg) => this._rehydrateMessage(msg));
-      this._messages = stored;
+      // If the saved conversation ended in a live-agent handoff, keep the
+      // input locked after a page reload as well.
+      if (this._handoff) {
+        this._setInputDisabled(true, 'Connected to a live agent. Conversation continues here.');
+      }
     }
 
     _persistMessages() {
@@ -2342,6 +2353,7 @@
       this._visitorInfo = null;
       this._handoff = false;
       this._loading = false;
+      this._lastNavTopic = -1;
       this._unread = 0;
       this._setInputDisabled(false);
       this._msgs.innerHTML = '';
@@ -2385,7 +2397,11 @@
      * @param {string} [type='text']
      */
     async sendMessage(text, type = 'text') {
-      if (!text || this._handoff) return;
+      // Block re-entrant sends: rapid Enter presses, double-tapped quick
+      // replies / suggested questions, or any send while a previous webhook
+      // call is still in flight would otherwise produce duplicate bubbles
+      // and duplicate webhook calls.
+      if (!text || this._handoff || this._loading) return;
 
       // Clear welcome screen if first message
       const welcomeEl = this._msgs.querySelector('.ttc-welcome');
@@ -2441,8 +2457,14 @@
           }
         }
 
-        // Auto-inject navigation buttons based on what the user asked
-        if (!this._handoff) {
+        // Auto-inject navigation buttons based on what the user asked —
+        // but ONLY when the AI reply didn't already include action UI
+        // (buttons / lead form / quick replies). Otherwise the chat shows
+        // two stacked button groups for a single message.
+        const aiAlreadyActed = messages.some(
+          (m) => m.type === 'buttons' || m.type === 'lead_form' || m.type === 'quick_replies'
+        );
+        if (!this._handoff && !aiAlreadyActed) {
           const navNode = _buildAutoNavButtons(text, this);
           if (navNode) {
             await new Promise((r) => setTimeout(r, 180));
@@ -2510,7 +2532,10 @@
         }
       };
 
-      const raw = await WebhookClient.send(this._config.webhook, payload);
+      // Never auto-retry lead submissions: if the request reached the server
+      // but the response was lost, a silent retry would record the lead twice.
+      const isLeadSubmit = extra.messageType === 'lead_form_submit';
+      const raw = await WebhookClient.send(this._config.webhook, payload, { retries: isLeadSubmit ? 0 : 1 });
       const { messages } = ResponseParser.parse(raw);
       for (const msg of messages) await this._renderBotMessage(msg);
     }
@@ -2580,7 +2605,7 @@
      * Append a user message bubble.
      * @param {{ role: string, content: string, ts: number }} msg
      */
-    _appendMessage(msg) {
+    _appendMessage(msg, record = true) {
       const row = document.createElement('div');
       row.className = 'ttc-row ttc-user';
 
@@ -2607,7 +2632,7 @@
 
       this._msgs.appendChild(row);
       this._scrollToBottom();
-      this._messages.push(msg);
+      if (record) this._messages.push(msg);
       this._trimMessages();
     }
 
@@ -2617,8 +2642,13 @@
      */
     _rehydrateMessage(msg) {
       if (msg.role === 'user') {
-        this._appendMessage(msg);
+        this._appendMessage(msg, false);
       } else if (msg.role === 'bot' && msg.type) {
+        // Skip interactive message types on restore: the data needed to
+        // rebuild them isn't persisted, and re-showing a stale lead form
+        // after a reload invites a duplicate submission.
+        if (msg.type === 'lead_form' || msg.type === 'buttons' || msg.type === 'quick_replies') return;
+        if (msg.type === 'handoff') this._handoff = true;
         const renderer = Renderers[msg.type];
         if (!renderer) return;
         const node = renderer(msg, this);
@@ -2748,9 +2778,10 @@
     }
 
     _trimMessages() {
-      const rows = this._msgs.querySelectorAll('.ttc-row');
-      if (rows.length > MAX_MESSAGES_IN_DOM) {
+      let rows = this._msgs.querySelectorAll('.ttc-row');
+      while (rows.length > MAX_MESSAGES_IN_DOM) {
         rows[0].remove();
+        rows = this._msgs.querySelectorAll('.ttc-row');
       }
     }
 
@@ -2789,7 +2820,7 @@
 
   /**
    * @namespace TayTravelsChatbot
-   * @description Public JavaScript API for the Real Estate AI Chatbot Widget.
+   * @description Public JavaScript API for the Tay Travels AI Chatbot Widget.
    */
   const TayTravelsChatbot = {
     /**
@@ -2802,9 +2833,9 @@
      * @example
      * TayTravelsChatbot.init({
      *   webhook: 'https://my-n8n.app/webhook/abc',
-     *   agencyName: 'Luxury Homes',
-     *   assistantName: 'Emma',
-     *   theme: { primary: '#081A33', accent: '#D4AF37' },
+     *   agencyName: 'Tay Travels',
+     *   assistantName: 'Taje',
+     *   theme: { primary: '#1E255D', accent: '#D50032' },
      * });
      */
     init(userConfig = {}) {
