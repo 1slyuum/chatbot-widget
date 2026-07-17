@@ -1436,12 +1436,31 @@
   // ─────────────────────────────────────────────────────────────────────────────
 
   const AUTO_NAV = [
+    // ── Login / account access ──────────────────────────────────────────────────
+    {
+      keywords: /login|log\.?in|sign\.?in|my account|account|portal|log me in/i,
+      items: [
+        {
+          label: 'Login to Your Account',
+          subtitle: 'Access your InteleTravel portal',
+          url: 'https://tajeblack.inteletravel.com/login',
+          icon: 'contact',
+        },
+        {
+          label: 'Visit Booking Site',
+          subtitle: "Search & book on Taje's site",
+          url: 'https://tajeblack.inteletravel.com',
+          icon: 'calendar',
+        },
+      ],
+    },
+    // ── Cruises ─────────────────────────────────────────────────────────────────
     {
       keywords: /cruise|ship|sail|caribbean|mediterranean|bahamas|alaska|voyage|royal|carnival|ncl|celebrity|disney cruise/i,
       items: [
         {
           label: 'Browse Cruises',
-          subtitle: 'Caribbean, Mediterranean & more',
+          subtitle: "Search & book cruises on Taje's site",
           url: 'https://tajeblack.inteletravel.com',
           icon: 'cruise',
         },
@@ -1454,12 +1473,13 @@
         },
       ],
     },
+    // ── Flights ─────────────────────────────────────────────────────────────────
     {
       keywords: /flight|fly|airline|airfare|ticket|airport|one.way|round.trip|nonstop|layover/i,
       items: [
         {
           label: 'Search Flights',
-          subtitle: 'Best fares to any destination',
+          subtitle: "Find & book flights on Taje's site",
           url: 'https://tajeblack.inteletravel.com',
           icon: 'plane',
         },
@@ -1472,12 +1492,13 @@
         },
       ],
     },
+    // ── Hotels & Stays ──────────────────────────────────────────────────────────
     {
       keywords: /hotel|stay|resort|room|accommodation|airbnb|lodge|inn|suite|villa|all.inclusive/i,
       items: [
         {
           label: 'Browse Hotels & Stays',
-          subtitle: 'Resorts, villas & curated stays',
+          subtitle: "Search resorts & villas on Taje's site",
           url: 'https://tajeblack.inteletravel.com',
           icon: 'bed',
         },
@@ -1490,12 +1511,13 @@
         },
       ],
     },
+    // ── Group Vacations ─────────────────────────────────────────────────────────
     {
       keywords: /group|party|reunion|corporate|team|friends|wedding|honeymoon|bachelorette|birthday|family trip|church|sorority|fraternity/i,
       items: [
         {
           label: 'Plan a Group Vacation',
-          subtitle: 'Birthdays, reunions & group getaways',
+          subtitle: "Search group packages on Taje's site",
           url: 'https://tajeblack.inteletravel.com',
           icon: 'group',
         },
@@ -1508,6 +1530,7 @@
         },
       ],
     },
+    // ── Travel Insurance ────────────────────────────────────────────────────────
     {
       keywords: /insur|protect|cover|policy|cancel|emergency|medical|lost bag|refund/i,
       items: [
@@ -1518,19 +1541,20 @@
           icon: 'shield',
         },
         {
-          label: 'Why You Need Insurance',
-          subtitle: 'Read Taje\'s guide (PDF)',
+          label: "Why You Need Insurance",
+          subtitle: "Read Taje's guide (PDF)",
           url: 'https://d3nyn9h0k44yua.cloudfront.net/media/backoffice/us/pdf/WhyPurchaseInsurance.pdf',
           icon: 'externalLink',
         },
       ],
     },
+    // ── Activities & Tours ──────────────────────────────────────────────────────
     {
       keywords: /activity|activities|excursion|tour|experience|things to do|adventure|event/i,
       items: [
         {
           label: 'Browse Activities & Tours',
-          subtitle: 'Excursions & local experiences',
+          subtitle: "Search excursions on Taje's site",
           url: 'https://tajeblack.inteletravel.com',
           icon: 'calendar',
         },
@@ -1543,12 +1567,13 @@
         },
       ],
     },
+    // ── Rides & Transfers ───────────────────────────────────────────────────────
     {
       keywords: /ride|car service|airport pickup|airport transfer|shuttle|taxi|car rental|private driver/i,
       items: [
         {
           label: 'Browse Rides',
-          subtitle: 'Airport transfers & private cars',
+          subtitle: "Search transfers & cars on Taje's site",
           url: 'https://tajeblack.inteletravel.com',
           icon: 'ride',
         },
@@ -1561,6 +1586,7 @@
         },
       ],
     },
+    // ── Passports & Visas ───────────────────────────────────────────────────────
     {
       keywords: /passport|visa|entry requirement|documentation needed|travel document/i,
       items: [
@@ -1579,12 +1605,31 @@
         },
       ],
     },
+    // ── Travel Tips / Blog ──────────────────────────────────────────────────────
+    {
+      keywords: /tip|advice|guide|blog|article|how to travel|travel advice|best time|when to go/i,
+      items: [
+        {
+          label: 'Travel Tips & Guides',
+          subtitle: 'Expert advice from InteleTravel',
+          url: 'https://info.inteletravel.com/travel-tips',
+          icon: 'externalLink',
+        },
+        {
+          label: 'Why Use a Travel Agent?',
+          subtitle: 'Read the guide',
+          url: 'https://www2.inteletravel.com/why-you-should-use-a-travel-agent',
+          icon: 'externalLink',
+        },
+      ],
+    },
+    // ── General booking / fallback ──────────────────────────────────────────────
     {
       keywords: /book|reserve|enquire|contact|quote|plan|help|vacation|trip|package|deal|where.*go|going.*to|travel/i,
       items: [
         {
           label: 'Book with Taje',
-          subtitle: 'Start planning your dream trip',
+          subtitle: "Search & book your trip on our site",
           url: 'https://tajeblack.inteletravel.com',
           icon: 'calendar',
         },
@@ -1596,7 +1641,7 @@
         },
       ],
     },
-  ];
+  ]
 
   function _buildAutoNavButtons(text, widget) {
     if (!text || typeof text !== 'string') return null;
