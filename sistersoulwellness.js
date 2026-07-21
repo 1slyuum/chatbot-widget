@@ -298,7 +298,8 @@
     try {
       const response = await request(value);
       typing.remove(); addMessage(response || "Thank you for reaching out.");
-      if (/contact|call|email|speak|talk|reach out|follow up/i.test(value) && !leadShown) showLeadForm();
+      const wantsContact = /contact|call|email|speak|talk|reach out|follow up|share (your|you're|ur)? ?(info|contact|details)|get in touch/i;
+      if ((wantsContact.test(value) || wantsContact.test(response)) && !leadShown) showLeadForm();
     } catch (error) {
       typing.remove(); addMessage(friendlyError(error), "bot", { error: true, retry: lastMessage });
     } finally { loading = false; sendButton.disabled = false; input.disabled = false; input.focus(); }
