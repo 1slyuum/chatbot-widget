@@ -1,357 +1,912 @@
 /*!
- * Blackstone Legal Intake — embeddable chat widget
- * Usage:
+ * blackstone-legal-chat.js
+ * A self-contained chat widget for law firm websites.
+ * Theme: "Midnight Chambers"
+ *
+ * EMBEDDING
+ * ---------
+ * Place this script tag on your page (typically before </body>):
+ *
  *   <script
- *     src="https://your-domain.com/widgets/blackstone-legal-chat.js"
- *     data-webhook-url="https://your-n8n-instance/webhook/blackstone-legal"
+ *     src="blackstone-legal-chat.js"
+ *     data-webhook-url="https://your-server.example.com/chat-webhook"
  *     data-position="right"
- *     data-cta-url="https://your-law-firm.com/consultation"
- *     data-timeout="30000"
- *     defer></script>
+ *     data-cta-url="https://your-firm.com/contact"
+ *     data-cta-label="Request a consultation"
+ *     data-timeout="20000"
+ *   ></script>
+ *
+ * All styling is encapsulated inside a Shadow DOM — it will not collide
+ * with your page's CSS. No dependencies. No globals are exposed.
  */
-(() => {
-  "use strict";
+(function () {
+  'use strict';
 
-  if (window.__BLACKSTONE_LEGAL_WIDGET_LOADED__) return;
-  window.__BLACKSTONE_LEGAL_WIDGET_LOADED__ = true;
+  /* ================================================================
+   * CONFIGURATION
+   * ----------------------------------------------------------------
+   * Every setting below is read from a data-* attribute on the
+   * <script> tag that loads this file. A non-developer only needs
+   * to edit the attributes in the HTML — there is no need to touch
+   * the JavaScript itself.
+   *
+   * THE WEBHOOK URL
+   *   Set  data-webhook-url  to the fully-qualified HTTPS endpoint
+   *   that will receive chat messages. The endpoint must accept a
+   *   POST request with a JSON body. The widget will read the reply
+   *   from any of these keys (in any nesting): output, text,
+   *   message, response, answer, content.
+   *
+   *   Until a real URL is provided — i.e. the attribute is empty
+   *   or still contains the placeholder "example.com" — the widget
+   *   runs in DEMO MODE. No network requests are made and a polite
+   *   notice is shown inside the panel.
+   * ================================================================ */
 
-  const loader = document.currentScript;
-  const config = {
-    webhookUrl: loader?.dataset.webhookUrl || "",
-    position: loader?.dataset.position === "left" ? "left" : "right",
-    ctaUrl: loader?.dataset.ctaUrl || "https://www.example-law.com/consultation",
-    ctaLabel: loader?.dataset.ctaLabel || "Request a consultation",
-    timeout: Number(loader?.dataset.timeout) || 30000,
+  var currentScript =
+    document.currentScript ||
+    (function () {
+      var s = document.getElementsByTagName('script');
+      return s[s.length - 1];
+    })();
+
+  var CONFIG = {
+    webhookUrl:    (currentScript.getAttribute('data-webhook-url') || '').trim(),
+    position:      (currentScript.getAttribute('data-position') || 'right').toLowerCase() === 'left' ? 'left' : 'right',
+    ctaUrl:        (currentScript.getAttribute('data-cta-url') || '').trim(),
+    ctaLabel:      (currentScript.getAttribute('data-cta-label') || 'Request a consultation').trim(),
+    timeout:       Math.max(3000, parseInt(currentScript.getAttribute('data-timeout') || '20000', 10)),
+    firmName:      (currentScript.getAttribute('data-firm-name') || 'Blackstone & Chambers').trim(),
+    firmInitials:  (currentScript.getAttribute('data-firm-initials') || 'BC').trim(),
+    firmTagline:   (currentScript.getAttribute('data-firm-tagline') || 'Attorneys & Counselors at Law').trim(),
+    source:        (currentScript.getAttribute('data-source') || 'blackstone-legal-chat').trim(),
+    industry:      (currentScript.getAttribute('data-industry') || 'legal-services').trim(),
   };
 
-  const icons = {
-    chat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8A2.5 2.5 0 0 1 17.5 16H10l-4.2 3.5c-.6.5-1.5.1-1.5-.7V16h-.3A2.5 2.5 0 0 1 4 13.5v-8Z"/></svg>',
-    close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
-    minimize: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>',
-    send: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-6-6 6 6-6 6"/></svg>',
-    arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>',
-    seal: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6.5v5.2C4 16.4 7.4 19.8 12 21c4.6-1.2 8-4.6 8-9.3V6.5L12 3Zm-2.2 9.4 1.7 1.7 3.7-4.1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  };
-
-  const css = `
-    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap');
-    :host { all: initial; color-scheme: light; }
-    *, *::before, *::after { box-sizing: border-box; }
-    button, input, textarea, select { font: inherit; }
-    button, a { -webkit-tap-highlight-color: transparent; }
-    .bl-root {
-      --ink: #17130d;
-      --panel-deep: #1e1810;
-      --paper: #faf6ec;
-      --parchment: #f2e9d3;
-      --hairline: #d9c9a0;
-      --brass: #9c793f;
-      --brass-deep: #7c5f30;
-      --brass-soft: #cfb27e;
-      --danger: #7c332a;
-      position: fixed; z-index: 2147483000; bottom: 20px;
-      ${config.position}: 20px;
-      font-family: 'Inter', Arial, Helvetica, sans-serif; color: var(--ink);
-      text-rendering: optimizeLegibility;
-    }
-    .bl-launcher {
-      width: 60px; height: 60px; border: 1px solid var(--brass-soft);
-      border-radius: 12px; background: var(--panel-deep); color: var(--parchment);
-      box-shadow: 0 14px 28px rgba(23,19,13,.38), inset 0 0 0 3px rgba(207,178,126,.14);
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      transition: transform .2s ease, box-shadow .2s ease;
-    }
-    .bl-launcher:hover { transform: translateY(-2px); box-shadow: 0 18px 32px rgba(23,19,13,.44), inset 0 0 0 3px rgba(207,178,126,.2); }
-    .bl-launcher svg { width: 24px; height: 24px; fill: currentColor; }
-    .bl-panel {
-      display: none; flex-direction: column; overflow: hidden;
-      width: min(390px, calc(100vw - 32px)); height: min(650px, calc(100vh - 40px));
-      margin-bottom: 14px; border: 1px solid var(--hairline); border-radius: 8px;
-      background: var(--paper); box-shadow: 0 26px 60px rgba(23,19,13,.28);
-    }
-    .bl-panel[data-open="true"] { display: flex; animation: bl-in .22s ease-out; }
-    @keyframes bl-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
-    .bl-header {
-      min-height: 84px; padding: 16px 18px 13px; background: var(--panel-deep); color: var(--parchment);
-      display: flex; align-items: center; gap: 13px; position: relative;
-      border-bottom: 1px solid var(--brass-deep);
-      box-shadow: 0 5px 0 -3px rgba(207,178,126,.35);
-    }
-    .bl-mark {
-      width: 40px; height: 40px; flex: 0 0 auto; border: 1px solid var(--brass-soft);
-      border-radius: 3px; display: flex; align-items: center; justify-content: center;
-      font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 19px; color: var(--brass-soft);
-    }
-    .bl-head-copy { min-width: 0; flex: 1; }
-    .bl-title { margin: 0; font: 600 21px/1.2 'Cormorant Garamond', Georgia, serif; letter-spacing: .01em; }
-    .bl-status { margin: 6px 0 0; font-size: 10.5px; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--brass-soft); display: flex; align-items: center; gap: 7px; }
-    .bl-dot { width: 5px; height: 5px; background: var(--brass-soft); transform: rotate(45deg); }
-    .bl-icon-btn { width: 32px; height: 32px; border: 0; border-radius: 3px; color: inherit; background: transparent; cursor: pointer; display: grid; place-items: center; }
-    .bl-icon-btn:hover { background: rgba(207,178,126,.16); }
-    .bl-icon-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
-    .bl-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 22px 17px 14px; display: flex; flex-direction: column; gap: 13px; scroll-behavior: smooth; }
-    .bl-message { max-width: 87%; padding: 12px 14px; border-radius: 3px; font-size: 14px; line-height: 1.56; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .bl-message.bot { align-self: flex-start; background: var(--parchment); border: 1px solid var(--hairline); }
-    .bl-message.user { align-self: flex-end; background: var(--panel-deep); color: var(--parchment); }
-    .bl-message.error { border: 1px solid var(--danger); background: var(--paper); }
-    .bl-retry { margin-top: 8px; border: 0; padding: 0; color: var(--brass-deep); background: transparent; font-weight: 700; text-decoration: underline; cursor: pointer; }
-    .bl-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
-    .bl-chip { border: 1px solid var(--hairline); border-radius: 2px; padding: 8px 12px; color: var(--panel-deep); background: transparent; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; }
-    .bl-chip:hover { border-color: var(--brass); background: var(--parchment); }
-    .bl-typing { display: flex; gap: 4px; align-items: center; width: 54px; }
-    .bl-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--brass); opacity: .4; animation: bl-dot 1.1s infinite; }
-    .bl-typing i:nth-child(2) { animation-delay: .15s; } .bl-typing i:nth-child(3) { animation-delay: .3s; }
-    @keyframes bl-dot { 45% { opacity: 1; transform: translateY(-2px); } }
-    .bl-lead { margin-top: 3px; padding: 16px; border: 1px solid var(--hairline); border-radius: 4px; background: var(--parchment); }
-    .bl-lead h3 { margin: 0 0 5px; font: 600 19px/1.25 'Cormorant Garamond', Georgia, serif; color: var(--panel-deep); }
-    .bl-lead p { margin: 0 0 13px; font-size: 12px; line-height: 1.5; }
-    .bl-fields { display: grid; gap: 10px; }
-    .bl-field label { display: block; margin-bottom: 4px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--brass-deep); }
-    .bl-field input, .bl-field select, .bl-field textarea { width: 100%; min-height: 40px; border: 1px solid var(--hairline); border-radius: 2px; padding: 9px 10px; background: var(--paper); color: var(--ink); font-size: 14px; outline: none; resize: vertical; }
-    .bl-field input:focus, .bl-field select:focus, .bl-field textarea:focus, .bl-compose textarea:focus { border-color: var(--brass); box-shadow: 0 0 0 2px rgba(156,121,63,.16); }
-    .bl-consent { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0; font-size: 11px; line-height: 1.4; }
-    .bl-consent input { width: 16px; height: 16px; margin: 0; accent-color: var(--brass-deep); flex: 0 0 auto; }
-    .bl-submit { width: 100%; min-height: 42px; border: 0; border-radius: 2px; padding: 9px 14px; background: var(--panel-deep); color: var(--parchment); font-weight: 600; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
-    .bl-submit:disabled { opacity: .55; cursor: not-allowed; }
-    .bl-form-error { min-height: 16px; margin: 7px 0 0; color: var(--danger); font-size: 11px; }
-    .bl-footer { border-top: 1px solid var(--hairline); background: var(--paper); }
-    .bl-cta { margin: 13px 15px 0; min-height: 40px; border: 1px solid var(--panel-deep); border-radius: 2px; color: var(--panel-deep); text-decoration: none; font: 600 11px/1 'Inter', sans-serif; letter-spacing: .07em; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .bl-cta:hover { background: var(--panel-deep); color: var(--parchment); }
-    .bl-cta svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .bl-compose { padding: 11px 13px 9px; display: flex; gap: 8px; align-items: flex-end; }
-    .bl-compose textarea { flex: 1; min-height: 42px; max-height: 100px; resize: none; border: 1px solid var(--hairline); border-radius: 3px; padding: 10px 11px; color: var(--ink); background: #fff; font-size: 14px; line-height: 1.35; outline: none; }
-    .bl-send { width: 42px; height: 42px; flex: 0 0 auto; border: 0; border-radius: 3px; background: var(--panel-deep); color: var(--parchment); cursor: pointer; display: grid; place-items: center; }
-    .bl-send:disabled { opacity: .5; cursor: not-allowed; }
-    .bl-send svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-    .bl-note { margin: 0; padding: 0 15px 11px; text-align: center; font-size: 10px; line-height: 1.4; color: #7a6c53; }
-    .bl-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-    :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
-    @media (max-width: 520px) {
-      .bl-root { bottom: 12px; ${config.position}: 12px; }
-      .bl-panel { width: calc(100vw - 24px); height: min(680px, calc(100dvh - 24px)); margin-bottom: 0; border-radius: 6px; }
-      .bl-launcher { width: 56px; height: 56px; margin-top: 10px; margin-${config.position}: 2px; }
-    }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; transition: none !important; } }
-  `;
-
-  function escapeAttr(value) {
-    return String(value).replace(/[&"'<>]/g, (char) => ({ "&": "&amp;", '"': "&quot;", "'": "&#39;", "<": "&lt;", ">": "&gt;" })[char]);
-  }
-
-  const host = document.createElement("div");
-  host.id = "blackstone-legal-widget";
-  document.body.appendChild(host);
-  const shadow = host.attachShadow({ mode: "open" });
-
-  shadow.innerHTML = `
-    <style>${css}</style>
-    <div class="bl-root">
-      <section class="bl-panel" data-open="false" role="dialog" aria-modal="false" aria-label="Chat with Blackstone Legal Intake">
-        <header class="bl-header">
-          <div class="bl-mark" aria-hidden="true">B</div>
-          <div class="bl-head-copy"><h2 class="bl-title">Blackstone Legal</h2><p class="bl-status"><span class="bl-dot"></span>Intake &amp; Consultations</p></div>
-          <button class="bl-icon-btn bl-minimize" type="button" aria-label="Minimize chat">${icons.minimize}</button>
-          <button class="bl-icon-btn bl-close" type="button" aria-label="Close chat">${icons.close}</button>
-        </header>
-        <div class="bl-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
-        <footer class="bl-footer">
-          <a class="bl-cta" href="${escapeAttr(config.ctaUrl)}" target="_blank" rel="noopener noreferrer">${escapeAttr(config.ctaLabel)} ${icons.arrow}</a>
-          <form class="bl-compose">
-            <label class="bl-sr" for="bl-input">Message Blackstone Legal Intake</label>
-            <textarea id="bl-input" rows="1" maxlength="1200" placeholder="Ask about practice areas or consultations…"></textarea>
-            <button class="bl-send" type="submit" aria-label="Send message">${icons.send}</button>
-          </form>
-          <p class="bl-note">General information only — not legal advice. Using this chat does not create an attorney-client relationship. Do not share confidential information or rely on chat for deadlines or emergencies.</p>
-        </footer>
-      </section>
-      <button class="bl-launcher" type="button" aria-label="Open Blackstone Legal Intake" aria-expanded="false">${icons.chat}</button>
-    </div>`;
-
-  const panel = shadow.querySelector(".bl-panel");
-  const launcher = shadow.querySelector(".bl-launcher");
-  const messages = shadow.querySelector(".bl-messages");
-  const form = shadow.querySelector(".bl-compose");
-  const input = shadow.querySelector("#bl-input");
-  const sendButton = shadow.querySelector(".bl-send");
-  let loading = false;
-  let lastMessage = "";
-  let leadShown = false;
-  let lastFocused = null;
-
-  function sessionId() {
-    const key = "blackstoneLegalSessionId";
+  // Optional custom suggestion chips. Accepts JSON array or pipe-separated labels.
+  var rawSuggestions = currentScript.getAttribute('data-suggestions');
+  var suggestions = null;
+  if (rawSuggestions) {
     try {
-      let id = window.localStorage.getItem(key);
-      if (!id) {
-        id = crypto.randomUUID ? crypto.randomUUID() : `bl-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        window.localStorage.setItem(key, id);
-      }
+      suggestions = JSON.parse(rawSuggestions);
+    } catch (e) {
+      suggestions = rawSuggestions.split('|').map(function (s) { return s.trim(); }).filter(Boolean);
+    }
+  }
+  if (!suggestions || !suggestions.length) {
+    suggestions = [
+      { label: 'Business matter',  text: "I'd like to discuss a business matter." },
+      { label: 'Employment law',   text: 'I have a question about employment law.' },
+      { label: 'Estate planning',  text: 'I would like assistance with estate planning.' },
+      { label: 'Schedule a consultation', text: "I'd like to schedule a consultation." }
+    ];
+  }
+  CONFIG.suggestions = suggestions;
+
+  // Demo mode — no network calls, polite inline notice instead.
+  var DEMO_MODE = !CONFIG.webhookUrl || /example\.com/i.test(CONFIG.webhookUrl);
+
+  /* ================================================================
+   * Constants & state
+   * ================================================================ */
+  var SESSION_KEY = 'bl_chat_session_id_v1';
+
+  var state = {
+    isOpen: false,
+    isSending: false,
+    hasInteracted: false,
+    leadSubmitted: false,
+    sessionId: getOrCreateSessionId()
+  };
+
+  var els = {};
+
+  /* ================================================================
+   * Utilities
+   * ================================================================ */
+
+  function getOrCreateSessionId() {
+    try {
+      var existing = localStorage.getItem(SESSION_KEY);
+      if (existing) return existing;
+      var id = 'bl_' +
+        Date.now().toString(36) + '_' +
+        Math.random().toString(36).slice(2, 10) +
+        Math.random().toString(36).slice(2, 6);
+      localStorage.setItem(SESSION_KEY, id);
       return id;
-    } catch (_) {
-      return `bl-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    } catch (e) {
+      return 'bl_session_' + Date.now().toString(36) + '_tmp';
     }
   }
-  const currentSessionId = sessionId();
 
-  function scrollToEnd() { messages.scrollTop = messages.scrollHeight; }
-
-  function addMessage(text, type = "bot", options = {}) {
-    const item = document.createElement("div");
-    item.className = `bl-message ${type}${options.error ? " error" : ""}`;
-    item.textContent = text;
-    if (options.retry) {
-      const retry = document.createElement("button");
-      retry.type = "button"; retry.className = "bl-retry"; retry.textContent = "Try again";
-      retry.addEventListener("click", () => { item.remove(); sendMessage(options.retry); });
-      item.appendChild(document.createElement("br")); item.appendChild(retry);
-    }
-    messages.appendChild(item); scrollToEnd(); return item;
-  }
-
-  function addSuggestions() {
-    const wrap = document.createElement("div"); wrap.className = "bl-suggestions";
-    [
-      ["Practice areas", "What types of legal matters does the firm handle?"],
-      ["Request consultation", "I'd like to request an initial consultation."],
-      ["Is my case a fit?", "Can you help me understand whether my matter may fit the firm's practice?"],
-      ["Office contact", "I'd like the firm to contact me about a legal matter."],
-    ].forEach(([label, prompt]) => {
-      const button = document.createElement("button"); button.type = "button"; button.className = "bl-chip"; button.textContent = label;
-      button.addEventListener("click", () => { wrap.remove(); if (label === "Request consultation" || label === "Office contact") showLeadForm(); else sendMessage(prompt); });
-      wrap.appendChild(button);
-    });
-    messages.appendChild(wrap); scrollToEnd();
-  }
-
-  function showLeadForm() {
-    if (leadShown) return;
-    leadShown = true;
-    const card = document.createElement("form"); card.className = "bl-lead"; card.noValidate = true;
-    card.innerHTML = `<h3>Request a consultation</h3><p>Share basic, non-confidential details for an initial conflict check. Submitting this form does not create an attorney-client relationship.</p>
-      <div class="bl-fields">
-        <div class="bl-field"><label for="bl-name">Full name</label><input id="bl-name" name="name" autocomplete="name" maxlength="80" required></div>
-        <div class="bl-field"><label for="bl-email">Email</label><input id="bl-email" name="email" type="email" autocomplete="email" maxlength="120" required></div>
-        <div class="bl-field"><label for="bl-phone">Phone</label><input id="bl-phone" name="phone" type="tel" autocomplete="tel" maxlength="30" required></div>
-        <div class="bl-field"><label for="bl-matter">Matter type</label><select id="bl-matter" name="matterType"><option value="">Select…</option><option>Business</option><option>Employment</option><option>Estate planning</option><option>Family</option><option>Litigation</option><option>Real estate</option><option>Other</option></select></div>
-        <div class="bl-field"><label for="bl-summary">Brief non-confidential summary</label><textarea id="bl-summary" name="summary" maxlength="500" rows="3" placeholder="Please do not include confidential or sensitive details."></textarea></div>
-      </div>
-      <label class="bl-consent"><input name="consent" type="checkbox" required><span>I agree that Blackstone Legal may contact me about this consultation request.</span></label>
-      <button class="bl-submit" type="submit">Request consultation</button><p class="bl-form-error" role="alert"></p>`;
-    messages.appendChild(card); scrollToEnd(); card.querySelector("input").focus();
-    card.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const data = new FormData(card);
-      const name = String(data.get("name") || "").trim();
-      const email = String(data.get("email") || "").trim();
-      const phone = String(data.get("phone") || "").trim();
-      const matterType = String(data.get("matterType") || "").trim();
-      const summary = String(data.get("summary") || "").trim();
-      const error = card.querySelector(".bl-form-error");
-      if (!name || !/^\S+@\S+\.\S+$/.test(email) || phone.replace(/\D/g, "").length < 7 || !data.get("consent")) {
-        error.textContent = "Please enter a valid name, email, phone number, and confirm consent."; return;
-      }
-      const button = card.querySelector(".bl-submit"); button.disabled = true; button.textContent = "Sending…"; error.textContent = "";
-      try {
-        await request("I'd like to request a legal consultation.", "lead", { name, email, phone, matterType, summary, consent: true });
-        card.remove(); addMessage("Thank you. Your consultation request was sent to the intake team. They will review it and contact you about possible next steps. No attorney-client relationship has been formed.");
-      } catch (err) {
-        error.textContent = friendlyError(err); button.disabled = false; button.textContent = "Request consultation";
-      }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
 
-  function endpointReady() {
-    return /^https?:\/\//i.test(config.webhookUrl) && !/YOUR_|REPLACE|example\.com/i.test(config.webhookUrl);
+  // Walk a response payload (string | object, possibly nested) and return the
+  // first non-empty string found under one of the recognised keys.
+  function extractResponseText(data) {
+    if (typeof data === 'string') return data.trim();
+    if (!data || typeof data !== 'object') return '';
+    var keys = ['output', 'text', 'message', 'response', 'answer', 'content'];
+    for (var i = 0; i < keys.length; i++) {
+      var v = data[keys[i]];
+      if (typeof v === 'string' && v.trim()) return v.trim();
+      if (v && typeof v === 'object') {
+        var nested = extractResponseText(v);
+        if (nested) return nested;
+      }
+    }
+    // Last resort: arrays of message objects with .text/.content
+    if (Array.isArray(data)) {
+      for (var j = 0; j < data.length; j++) {
+        var r = extractResponseText(data[j]);
+        if (r) return r;
+      }
+    }
+    return '';
   }
 
-  async function request(chatInput, eventType = "message", lead = null) {
-    if (!endpointReady()) throw new Error("SETUP");
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), config.timeout);
-    const payload = {
-      chatInput,
-      sessionId: currentSessionId,
-      eventType,
-      source: "blackstone-legal-widget",
-      industry: "legal",
-      pageUrl: window.location.href,
-      pageTitle: document.title,
-      timestamp: new Date().toISOString(),
-      metadata: { source: "blackstone-legal-widget", industry: "legal", pageUrl: window.location.href, pageTitle: document.title },
-      ...(lead ? { lead, name: lead.name, email: lead.email, phone: lead.phone, consent: lead.consent } : {}),
+  /* ================================================================
+   * Styles — "Midnight Chambers" theme
+   * Gold is used exclusively as hairlines, borders, and text — never
+   * as a fill colour. Sharp corners. Quiet, engraved typography.
+   * ================================================================ */
+  var STYLES = [
+    ':host { all: initial; }',
+
+    '.bl-root, .bl-root *, .bl-root *::before, .bl-root *::after {',
+    '  box-sizing: border-box; margin: 0; padding: 0;',
+    '}',
+
+    '.bl-root {',
+    '  --bl-onyx:#0c0b09; --bl-onyx-2:#14120e; --bl-onyx-3:#1c1913;',
+    '  --bl-ivory:#eae3d1; --bl-ivory-dim:#a39d8d; --bl-ivory-faint:#6e6a5f;',
+    '  --bl-gold:#b6923f; --bl-gold-bright:#d0a655;',
+    '  --bl-gold-dim:rgba(182,146,63,0.42); --bl-gold-faint:rgba(182,146,63,0.10);',
+    '  --bl-line:rgba(234,227,209,0.12); --bl-line-strong:rgba(234,227,209,0.22);',
+    '  --bl-rust:#8a3a3a;',
+    '  --bl-serif:"Cormorant","Cormorant Garamond","Italiana",Georgia,"Times New Roman",serif;',
+    '  --bl-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;',
+    '  position:fixed; bottom:22px; z-index:2147483645;',
+    '  font-family:var(--bl-sans); font-size:14px; line-height:1.5;',
+    '  color:var(--bl-ivory); letter-spacing:normal; text-align:left;',
+    '  text-transform:none; font-weight:400; font-style:normal;',
+    '  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;',
+    '}',
+    '.bl-root--right { right:22px; }',
+    '.bl-root--left  { left:22px; }',
+
+    /* ---------- Launcher ---------- */
+    '.bl-launcher {',
+    '  display:inline-flex; align-items:center; gap:11px;',
+    '  padding:9px 18px 9px 9px; background:var(--bl-onyx);',
+    '  border:1px solid var(--bl-gold-dim); border-radius:3px;',
+    '  color:var(--bl-ivory); cursor:pointer;',
+    '  font:500 11px/1 var(--bl-sans); letter-spacing:0.22em; text-transform:uppercase;',
+    '  transition:background 240ms ease, border-color 240ms ease, color 240ms ease;',
+    '  box-shadow:0 10px 30px rgba(0,0,0,0.45);',
+    '}',
+    '.bl-launcher:hover { background:var(--bl-onyx-3); border-color:var(--bl-gold); color:var(--bl-gold-bright); }',
+    '.bl-launcher:focus-visible { outline:2px solid var(--bl-gold); outline-offset:3px; }',
+    '.bl-launcher__mark {',
+    '  display:inline-flex; align-items:center; justify-content:center;',
+    '  width:30px; height:30px; border:1px solid var(--bl-gold); color:var(--bl-gold);',
+    '  font:600 14px/1 var(--bl-serif); letter-spacing:0.06em;',
+    '}',
+    '.bl-launcher__label { white-space:nowrap; }',
+
+    /* ---------- Panel ---------- */
+    '.bl-panel {',
+    '  position:absolute; bottom:70px; width:384px;',
+    '  max-width:calc(100vw - 28px); max-height:min(720px, calc(100vh - 110px));',
+    '  background:var(--bl-onyx); border:1px solid var(--bl-gold-dim); border-radius:3px;',
+    '  display:flex; flex-direction:column; overflow:hidden;',
+    '  opacity:0; transform:translateY(10px) scale(0.985); pointer-events:none;',
+    '  transition:opacity 280ms ease, transform 280ms ease;',
+    '  box-shadow:0 24px 80px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.4);',
+    '}',
+    '.bl-root--right .bl-panel { right:0; }',
+    '.bl-root--left  .bl-panel { left:0; }',
+    '.bl-panel.is-open { opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }',
+
+    /* ---------- Header (brass nameplate) ---------- */
+    '.bl-panel__header {',
+    '  display:flex; align-items:center; gap:13px;',
+    '  padding:16px 18px; position:relative;',
+    '  border-top:1px solid var(--bl-gold-dim); border-bottom:1px solid var(--bl-gold-dim);',
+    '  background:linear-gradient(180deg, var(--bl-onyx-2) 0%, var(--bl-onyx) 100%);',
+    '}',
+    '.bl-panel__header::before, .bl-panel__header::after {',
+    '  content:""; position:absolute; left:0; right:0; height:0;',
+    '  border-top:1px solid var(--bl-gold-faint); pointer-events:none;',
+    '}',
+    '.bl-panel__header::before { top:3px; }',
+    '.bl-panel__header::after  { bottom:3px; }',
+
+    '.bl-seal {',
+    '  position:relative; flex-shrink:0;',
+    '  display:inline-flex; align-items:center; justify-content:center;',
+    '  width:38px; height:38px; background:var(--bl-onyx);',
+    '  border:1px solid var(--bl-gold); color:var(--bl-gold);',
+    '  font:600 16px/1 var(--bl-serif); letter-spacing:0.06em;',
+    '}',
+    '.bl-seal::after { content:""; position:absolute; inset:3px; border:1px solid var(--bl-gold-faint); }',
+
+    '.bl-firm { flex:1; min-width:0; }',
+    '.bl-firm__name {',
+    '  font:600 17px/1.15 var(--bl-serif); letter-spacing:0.22em;',
+    '  text-transform:uppercase; color:var(--bl-ivory);',
+    '  text-shadow:0 1px 0 rgba(0,0,0,0.7);',
+    '  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;',
+    '}',
+    '.bl-firm__tagline {',
+    '  font:500 9px/1 var(--bl-sans); letter-spacing:0.28em;',
+    '  text-transform:uppercase; color:var(--bl-gold); margin-top:5px;',
+    '}',
+
+    '.bl-close {',
+    '  width:28px; height:28px; flex-shrink:0;',
+    '  background:transparent; border:1px solid var(--bl-line); color:var(--bl-ivory-dim);',
+    '  cursor:pointer; border-radius:2px;',
+    '  display:inline-flex; align-items:center; justify-content:center;',
+    '  transition:color 200ms ease, border-color 200ms ease;',
+    '}',
+    '.bl-close:hover { color:var(--bl-ivory); border-color:var(--bl-gold-dim); }',
+    '.bl-close:focus-visible { outline:2px solid var(--bl-gold); outline-offset:2px; }',
+
+    /* ---------- Body (scrollable) ---------- */
+    '.bl-panel__body {',
+    '  flex:1; overflow-y:auto; padding:18px; background:var(--bl-onyx);',
+    '  scrollbar-width:thin; scrollbar-color:var(--bl-gold-dim) transparent;',
+    '}',
+    '.bl-panel__body::-webkit-scrollbar { width:6px; }',
+    '.bl-panel__body::-webkit-scrollbar-track { background:transparent; }',
+    '.bl-panel__body::-webkit-scrollbar-thumb { background:var(--bl-gold-dim); border-radius:3px; }',
+
+    /* ---------- Conversation log ---------- */
+    '.bl-log { display:flex; flex-direction:column; gap:11px; }',
+
+    '.bl-msg {',
+    '  max-width:86%; padding:10px 13px; border-radius:3px;',
+    '  font-size:13.5px; line-height:1.55; animation:bl-fade 280ms ease;',
+    '}',
+    '.bl-msg--in {',
+    '  align-self:flex-start; background:var(--bl-onyx-2);',
+    '  border:1px solid var(--bl-line); color:var(--bl-ivory);',
+    '}',
+    '.bl-msg--out {',
+    '  align-self:flex-end; background:var(--bl-onyx);',
+    '  border:1px solid var(--bl-gold-dim); color:var(--bl-ivory);',
+    '}',
+    '.bl-msg__meta {',
+    '  font:500 9px/1 var(--bl-sans); letter-spacing:0.22em; text-transform:uppercase;',
+    '  color:var(--bl-ivory-faint); margin-bottom:6px;',
+    '}',
+    '.bl-msg--out .bl-msg__meta { color:var(--bl-gold); }',
+    '.bl-msg__body { white-space:pre-wrap; word-wrap:break-word; overflow-wrap:anywhere; }',
+    '@keyframes bl-fade { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }',
+
+    /* ---------- Typing indicator (three quiet static dots) ---------- */
+    '.bl-typing {',
+    '  align-self:flex-start; display:inline-flex; align-items:center; gap:5px;',
+    '  padding:13px 15px; background:var(--bl-onyx-2);',
+    '  border:1px solid var(--bl-line); border-radius:3px;',
+    '}',
+    '.bl-typing__dot {',
+    '  width:4px; height:4px; border-radius:50%;',
+    '  background:var(--bl-ivory-dim); opacity:0.55;',
+    '}',
+
+    /* ---------- Suggestion chips ---------- */
+    '.bl-chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:18px; }',
+    '.bl-chip {',
+    '  background:transparent; border:1px solid var(--bl-line); color:var(--bl-ivory-dim);',
+    '  padding:7px 11px; font:500 11px/1 var(--bl-sans); letter-spacing:0.08em;',
+    '  border-radius:2px; cursor:pointer; transition:all 200ms ease;',
+    '}',
+    '.bl-chip:hover { border-color:var(--bl-gold-dim); color:var(--bl-ivory); }',
+    '.bl-chip:focus-visible { outline:2px solid var(--bl-gold); outline-offset:2px; }',
+
+    /* ---------- Lead form ---------- */
+    '.bl-lead { margin-top:22px; padding-top:18px; border-top:1px solid var(--bl-line); }',
+    '.bl-lead__title {',
+    '  font:600 16px/1.2 var(--bl-serif); letter-spacing:0.18em; text-transform:uppercase;',
+    '  color:var(--bl-ivory); text-shadow:0 1px 0 rgba(0,0,0,0.6);',
+    '}',
+    '.bl-lead__sub {',
+    '  font-size:11.5px; color:var(--bl-ivory-dim); margin:5px 0 16px; line-height:1.55;',
+    '}',
+
+    '.bl-field { display:block; margin-bottom:12px; }',
+    '.bl-field__label {',
+    '  display:block; font:500 9.5px/1 var(--bl-sans); letter-spacing:0.22em;',
+    '  text-transform:uppercase; color:var(--bl-ivory-dim); margin-bottom:6px;',
+    '}',
+    '.bl-field__label em {',
+    '  font-style:italic; text-transform:none; letter-spacing:0.02em;',
+    '  color:var(--bl-ivory-faint); font-size:11px;',
+    '}',
+    '.bl-field__input {',
+    '  width:100%; background:var(--bl-onyx-2); border:1px solid var(--bl-line);',
+    '  color:var(--bl-ivory); padding:10px 12px; font:400 13px/1.5 var(--bl-sans);',
+    '  border-radius:2px; transition:border-color 200ms ease, background 200ms ease;',
+    '}',
+    '.bl-field__input::placeholder { color:var(--bl-ivory-faint); }',
+    '.bl-field__input:focus { outline:none; border-color:var(--bl-gold); background:var(--bl-onyx-3); }',
+    '.bl-field__input--area { resize:vertical; min-height:64px; font-family:var(--bl-sans); }',
+    '.bl-field--error .bl-field__input { border-color:var(--bl-rust); }',
+    '.bl-field__error { font-size:10.5px; color:#c87676; margin-top:5px; letter-spacing:0.02em; }',
+
+    '.bl-consent {',
+    '  display:flex; gap:9px; align-items:flex-start; cursor:pointer;',
+    '  font-size:11px; color:var(--bl-ivory-dim); line-height:1.55; margin:6px 0 16px;',
+    '}',
+    '.bl-consent input[type="checkbox"] {',
+    '  margin-top:2px; accent-color:var(--bl-gold); flex-shrink:0;',
+    '  width:14px; height:14px; cursor:pointer;',
+    '}',
+    '.bl-consent--error { color:#c87676; }',
+
+    '.bl-lead__submit {',
+    '  width:100%; background:transparent; border:1px solid var(--bl-gold); color:var(--bl-gold);',
+    '  padding:11px 16px; font:500 11px/1 var(--bl-sans); letter-spacing:0.24em;',
+    '  text-transform:uppercase; border-radius:2px; cursor:pointer; transition:all 240ms ease;',
+    '}',
+    '.bl-lead__submit:hover { color:var(--bl-gold-bright); border-color:var(--bl-gold-bright); background:var(--bl-gold-faint); }',
+    '.bl-lead__submit:focus-visible { outline:2px solid var(--bl-gold); outline-offset:2px; }',
+    '.bl-lead__submit:disabled { opacity:0.5; cursor:not-allowed; }',
+
+    /* ---------- Footer / compose / CTA ---------- */
+    '.bl-panel__footer {',
+    '  border-top:1px solid var(--bl-line); padding:12px 14px 13px; background:var(--bl-onyx-2);',
+    '}',
+    '.bl-compose {',
+    '  display:flex; gap:8px; align-items:flex-end;',
+    '  background:var(--bl-onyx); border:1px solid var(--bl-line); border-radius:2px;',
+    '  padding:6px 6px 6px 12px; transition:border-color 200ms ease;',
+    '}',
+    '.bl-compose:focus-within { border-color:var(--bl-gold-dim); }',
+    '.bl-compose__input {',
+    '  flex:1; background:transparent; border:0; color:var(--bl-ivory);',
+    '  font:400 13.5px/1.5 var(--bl-sans); resize:none; max-height:120px;',
+    '  padding:5px 0; outline:none; min-height:22px;',
+    '}',
+    '.bl-compose__input::placeholder { color:var(--bl-ivory-faint); font-style:italic; }',
+
+    '.bl-send {',
+    '  width:34px; height:34px; flex-shrink:0;',
+    '  background:transparent; border:1px solid var(--bl-gold-dim); color:var(--bl-gold);',
+    '  cursor:pointer; border-radius:2px;',
+    '  display:inline-flex; align-items:center; justify-content:center;',
+    '  transition:all 200ms ease;',
+    '}',
+    '.bl-send:hover { color:var(--bl-gold-bright); border-color:var(--bl-gold); background:var(--bl-gold-faint); }',
+    '.bl-send:focus-visible { outline:2px solid var(--bl-gold); outline-offset:2px; }',
+    '.bl-send:disabled { opacity:0.4; cursor:not-allowed; }',
+
+    '.bl-cta {',
+    '  display:block; margin-top:11px; text-align:center; text-decoration:none;',
+    '  color:var(--bl-ivory-dim); font:500 10px/1 var(--bl-sans); letter-spacing:0.26em;',
+    '  text-transform:uppercase; padding:9px 8px; border:1px solid var(--bl-line);',
+    '  border-radius:2px; transition:all 200ms ease;',
+    '}',
+    '.bl-cta:hover { color:var(--bl-gold); border-color:var(--bl-gold-dim); }',
+    '.bl-cta:focus-visible { outline:2px solid var(--bl-gold); outline-offset:2px; }',
+
+    /* ---------- Reduced motion ---------- */
+    '@media (prefers-reduced-motion: reduce) {',
+    '  .bl-root, .bl-root *, .bl-root *::before, .bl-root *::after {',
+    '    transition-duration:0ms !important; animation-duration:0ms !important;',
+    '    animation-iteration-count:1 !important;',
+    '  }',
+    '  .bl-msg { animation:none; }',
+    '}',
+
+    /* ---------- Mobile: panel becomes full-screen ---------- */
+    '@media (max-width: 480px) {',
+    '  .bl-root { bottom:16px; }',
+    '  .bl-root--right { right:16px; }',
+    '  .bl-root--left  { left:16px; }',
+    '  .bl-panel {',
+    '    position:fixed; bottom:0; left:0; right:0; top:auto;',
+    '    width:100vw; max-width:100vw; max-height:100vh; height:100vh;',
+    '    border:0; border-radius:0;',
+    '  }',
+    '  .bl-root--right .bl-panel, .bl-root--left .bl-panel { left:0; right:0; }',
+    '  .bl-launcher__label { display:none; }',
+    '}'
+  ].join('\n');
+
+  /* ================================================================
+   * Markup builder
+   * ================================================================ */
+
+  function buildChipsHtml() {
+    return CONFIG.suggestions.map(function (s) {
+      if (typeof s === 'string') s = { label: s, text: s };
+      return '<button class="bl-chip" type="button" data-suggestion="' +
+             escapeHtml(s.text) + '">' + escapeHtml(s.label) + '</button>';
+    }).join('');
+  }
+
+  function buildMarkup() {
+    var chipsHtml = buildChipsHtml();
+    var ctaHref = CONFIG.ctaUrl ? escapeHtml(CONFIG.ctaUrl) : '#';
+    var ctaAttrs = CONFIG.ctaUrl ? ' target="_blank" rel="noopener"' : '';
+    var ctaLabel = escapeHtml(CONFIG.ctaLabel || 'Request a consultation');
+
+    return [
+      '<button class="bl-launcher" type="button" aria-label="Open chat with ', escapeHtml(CONFIG.firmName), '" aria-expanded="false" aria-haspopup="dialog">',
+        '<span class="bl-launcher__mark" aria-hidden="true">', escapeHtml(CONFIG.firmInitials), '</span>',
+        '<span class="bl-launcher__label">Message chambers</span>',
+      '</button>',
+      '<section class="bl-panel" role="dialog" aria-modal="false" aria-label="Chat with ', escapeHtml(CONFIG.firmName), '" hidden>',
+        '<header class="bl-panel__header">',
+          '<div class="bl-seal" aria-hidden="true">', escapeHtml(CONFIG.firmInitials), '</div>',
+          '<div class="bl-firm">',
+            '<div class="bl-firm__name">', escapeHtml(CONFIG.firmName), '</div>',
+            '<div class="bl-firm__tagline">', escapeHtml(CONFIG.firmTagline), '</div>',
+          '</div>',
+          '<button class="bl-close" type="button" aria-label="Close chat">',
+            '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">',
+              '<path d="M3 3 L13 13 M13 3 L3 13"/>',
+            '</svg>',
+          '</button>',
+        '</header>',
+        '<div class="bl-panel__body">',
+          '<div class="bl-log" role="log" aria-live="polite" aria-label="Conversation transcript"></div>',
+          '<div class="bl-chips" role="group" aria-label="Suggested opening inquiries">', chipsHtml, '</div>',
+          '<form class="bl-lead" novalidate aria-label="Introduction form">',
+            '<div class="bl-lead__title">Introduce yourself</div>',
+            '<p class="bl-lead__sub">A brief introduction allows us to direct your inquiry to the appropriate chambers. Please do not include confidential or privileged information.</p>',
+
+            '<div class="bl-field">',
+              '<label class="bl-field__label" for="bl-fullName">Full name</label>',
+              '<input class="bl-field__input" id="bl-fullName" name="fullName" type="text" autocomplete="name">',
+            '</div>',
+            '<div class="bl-field">',
+              '<label class="bl-field__label" for="bl-email">Email</label>',
+              '<input class="bl-field__input" id="bl-email" name="email" type="email" autocomplete="email" inputmode="email">',
+            '</div>',
+            '<div class="bl-field">',
+              '<label class="bl-field__label" for="bl-phone">Phone</label>',
+              '<input class="bl-field__input" id="bl-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel">',
+            '</div>',
+            '<div class="bl-field">',
+              '<label class="bl-field__label" for="bl-matterType">Matter type</label>',
+              '<select class="bl-field__input" id="bl-matterType" name="matterType">',
+                '<option value="" disabled selected>Select…</option>',
+                '<option>Business</option>',
+                '<option>Employment</option>',
+                '<option>Estate planning</option>',
+                '<option>Family</option>',
+                '<option>Litigation</option>',
+                '<option>Real estate</option>',
+                '<option>Other</option>',
+              '</select>',
+            '</div>',
+            '<div class="bl-field">',
+              '<label class="bl-field__label" for="bl-summary">Brief summary <em>(non-confidential)</em></label>',
+              '<textarea class="bl-field__input bl-field__input--area" id="bl-summary" name="summary" rows="3"></textarea>',
+            '</div>',
+            '<label class="bl-consent">',
+              '<input type="checkbox" name="consent">',
+              '<span>I understand that submitting this form does not establish an attorney–client relationship and that no confidential information should be included.</span>',
+            '</label>',
+            '<button class="bl-lead__submit" type="submit">Submit introduction</button>',
+          '</form>',
+        '</div>',
+        '<footer class="bl-panel__footer">',
+          '<div class="bl-compose">',
+            '<textarea class="bl-compose__input" rows="1" placeholder="Write a message…" aria-label="Message input"></textarea>',
+            '<button class="bl-send" type="button" aria-label="Send message">',
+              '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">',
+                '<path d="M2 8 L14 8 M9 3 L14 8 L9 13"/>',
+              '</svg>',
+            '</button>',
+          '</div>',
+          '<a class="bl-cta" href="', ctaHref, '"', ctaAttrs, '>', ctaLabel, '</a>',
+        '</footer>',
+      '</section>'
+    ].join('');
+  }
+
+  /* ================================================================
+   * Font injection (Cormorant + Inter from Google Fonts)
+   * ================================================================ */
+  function injectFonts() {
+    if (document.getElementById('bl-fonts-link')) return;
+    var head = document.head || document.documentElement;
+    var pre1 = document.createElement('link');
+    pre1.rel = 'preconnect'; pre1.href = 'https://fonts.googleapis.com';
+    var pre2 = document.createElement('link');
+    pre2.rel = 'preconnect'; pre2.href = 'https://fonts.gstatic.com'; pre2.crossOrigin = '';
+    var link = document.createElement('link');
+    link.id = 'bl-fonts-link'; link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Cormorant:wght@500;600;700&family=Inter:wght@400;500;600&display=swap';
+    head.appendChild(pre1); head.appendChild(pre2); head.appendChild(link);
+  }
+
+  /* ================================================================
+   * Initialisation
+   * ================================================================ */
+  function init() {
+    injectFonts();
+
+    var host = document.createElement('div');
+    host.className = 'bl-host';
+    host.style.cssText =
+      'position:fixed;top:0;left:0;width:0;height:0;overflow:visible;' +
+      'pointer-events:none;z-index:2147483645;';
+    document.body.appendChild(host);
+
+    var shadow = host.attachShadow({ mode: 'open' });
+
+    var styleEl = document.createElement('style');
+    styleEl.textContent = STYLES;
+    shadow.appendChild(styleEl);
+
+    var root = document.createElement('div');
+    root.className = 'bl-root bl-root--' + CONFIG.position;
+    root.style.pointerEvents = 'auto';
+    root.innerHTML = buildMarkup();
+    shadow.appendChild(root);
+
+    // Cache references
+    els.host = host;
+    els.root = root;
+    els.launcher     = root.querySelector('.bl-launcher');
+    els.panel        = root.querySelector('.bl-panel');
+    els.closeBtn     = root.querySelector('.bl-close');
+    els.body         = root.querySelector('.bl-panel__body');
+    els.log          = root.querySelector('.bl-log');
+    els.chips        = root.querySelector('.bl-chips');
+    els.leadForm     = root.querySelector('.bl-lead');
+    els.composeInput = root.querySelector('.bl-compose__input');
+    els.sendBtn      = root.querySelector('.bl-send');
+    els.cta          = root.querySelector('.bl-cta');
+
+    if (!CONFIG.ctaUrl) els.cta.style.display = 'none';
+
+    wireEvents();
+    seedConversation();
+  }
+
+  function wireEvents() {
+    els.launcher.addEventListener('click', togglePanel);
+    els.closeBtn.addEventListener('click', closePanel);
+
+    els.chips.addEventListener('click', function (e) {
+      var chip = e.target.closest('.bl-chip');
+      if (!chip) return;
+      var text = chip.getAttribute('data-suggestion') || chip.textContent;
+      els.composeInput.value = text;
+      autoGrow(els.composeInput);
+      els.composeInput.focus();
+    });
+
+    els.leadForm.addEventListener('submit', handleLeadSubmit);
+
+    els.sendBtn.addEventListener('click', handleComposeSend);
+    els.composeInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleComposeSend();
+      }
+    });
+    els.composeInput.addEventListener('input', function () { autoGrow(this); });
+
+    // Escape closes the panel (document-level, since focus may be in shadow DOM)
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && state.isOpen) {
+        e.preventDefault();
+        closePanel();
+      }
+    });
+  }
+
+  function seedConversation() {
+    addMessage(
+      'Good evening, and welcome to ' + CONFIG.firmName + '. How may we be of assistance this evening?',
+      'in',
+      { meta: 'Chambers · Reception' }
+    );
+    if (DEMO_MODE) {
+      addMessage(
+        'The firm\'s secure intake system is being prepared. You may explore the interface freely — messages will not be transmitted until a webhook URL is configured.',
+        'in',
+        { meta: 'Notice' }
+      );
+    }
+  }
+
+  /* ================================================================
+   * Panel open / close
+   * ================================================================ */
+  function togglePanel() { state.isOpen ? closePanel() : openPanel(); }
+
+  function openPanel() {
+    if (state.isOpen) return;
+    state.isOpen = true;
+    els.panel.hidden = false;
+    void els.panel.offsetWidth; // force reflow so the transition runs
+    els.panel.classList.add('is-open');
+    els.launcher.setAttribute('aria-expanded', 'true');
+    setTimeout(function () {
+      if (state.isOpen) els.composeInput.focus();
+    }, 280);
+  }
+
+  function closePanel() {
+    if (!state.isOpen) return;
+    state.isOpen = false;
+    els.panel.classList.remove('is-open');
+    els.launcher.setAttribute('aria-expanded', 'false');
+    setTimeout(function () {
+      if (!state.isOpen) els.panel.hidden = true;
+    }, 280);
+    els.launcher.focus();
+  }
+
+  /* ================================================================
+   * Message rendering
+   * ================================================================ */
+  function addMessage(text, who, opts) {
+    opts = opts || {};
+    var msg = document.createElement('div');
+    msg.className = 'bl-msg bl-msg--' + (who === 'out' ? 'out' : 'in');
+
+    if (opts.meta) {
+      var meta = document.createElement('div');
+      meta.className = 'bl-msg__meta';
+      meta.textContent = opts.meta;
+      msg.appendChild(meta);
+    }
+    var body = document.createElement('div');
+    body.className = 'bl-msg__body';
+    body.textContent = text;
+    msg.appendChild(body);
+
+    els.log.appendChild(msg);
+    scrollLogToBottom();
+    return msg;
+  }
+
+  function addTypingIndicator() {
+    var t = document.createElement('div');
+    t.className = 'bl-typing';
+    t.setAttribute('aria-hidden', 'true');
+    t.innerHTML =
+      '<span class="bl-typing__dot"></span>' +
+      '<span class="bl-typing__dot"></span>' +
+      '<span class="bl-typing__dot"></span>';
+    els.log.appendChild(t);
+    scrollLogToBottom();
+    return t;
+  }
+
+  function scrollLogToBottom() {
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(function () { els.body.scrollTop = els.body.scrollHeight; });
+    } else {
+      els.body.scrollTop = els.body.scrollHeight;
+    }
+  }
+
+  function autoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function hideChips()    { if (els.chips)    els.chips.style.display = 'none'; }
+  function hideLeadForm() { if (els.leadForm) els.leadForm.style.display = 'none'; }
+
+  /* ================================================================
+   * Compose box
+   * ================================================================ */
+  function handleComposeSend() {
+    if (state.isSending) return;
+    var text = (els.composeInput.value || '').trim();
+    if (!text) return;
+
+    addMessage(text, 'out');
+    els.composeInput.value = '';
+    autoGrow(els.composeInput);
+
+    if (!state.hasInteracted) {
+      state.hasInteracted = true;
+      hideChips();
+    }
+    sendMessageToWebhook(text, { eventType: 'message' });
+  }
+
+  /* ================================================================
+   * Lead-capture form
+   * ================================================================ */
+  function collectLeadData() {
+    return {
+      fullName:   (els.leadForm.fullName.value   || '').trim(),
+      email:      (els.leadForm.email.value      || '').trim(),
+      phone:      (els.leadForm.phone.value      || '').trim(),
+      matterType: els.leadForm.matterType.value,
+      summary:    (els.leadForm.summary.value    || '').trim(),
+      consent:    els.leadForm.consent.checked
     };
-    try {
-      const response = await fetch(config.webhookUrl, {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json, text/plain" },
-        body: JSON.stringify(payload), signal: controller.signal,
-      });
-      if (!response.ok) throw new Error(`HTTP_${response.status}`);
-      const raw = await response.text();
-      if (eventType === "lead" && !raw.trim()) return "ok";
-      let parsed;
-      try { parsed = JSON.parse(raw); } catch (_) { parsed = raw; }
-      const value = parseResponse(parsed);
-      if (!value && eventType !== "lead") throw new Error("EMPTY");
-      return value || "ok";
-    } finally { clearTimeout(timer); }
   }
 
-  function parseResponse(data) {
-    if (typeof data === "string") return data.trim();
-    if (Array.isArray(data)) return data.length ? parseResponse(data[0]) : "";
-    if (!data || typeof data !== "object") return "";
-    for (const key of ["output", "text", "message", "response", "answer", "content"]) {
-      if (typeof data[key] === "string") return data[key].trim();
-      if (data[key] && typeof data[key] === "object") {
-        const nested = parseResponse(data[key]); if (nested) return nested;
-      }
+  function validateLead(d) {
+    var errors = {};
+    if (!d.fullName) errors.fullName = 'Your name is required.';
+    if (!d.email) {
+      errors.email = 'An email address is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) {
+      errors.email = 'Please enter a valid email address.';
     }
-    if (data.body) return parseResponse(data.body);
-    return "";
+    var digits = (d.phone.match(/\d/g) || []).length;
+    if (!d.phone) {
+      errors.phone = 'A contact number is required.';
+    } else if (digits < 7) {
+      errors.phone = 'The number provided must contain at least seven digits.';
+    }
+    if (!d.matterType) errors.matterType = 'Please select a matter type.';
+    if (!d.summary)    errors.summary    = 'A brief summary is required.';
+    if (!d.consent)    errors.consent    = 'Your acknowledgement is required to proceed.';
+    return errors;
   }
 
-  function friendlyError(error) {
-    if (error?.message === "SETUP") return "The concierge isn't connected yet. Add your n8n webhook URL to the widget script.";
-    if (error?.name === "AbortError") return "The concierge took too long to respond. Please try again.";
-    return "I couldn't connect just now. Please try again, or use the booking link below.";
+  function clearLeadErrors() {
+    var i, fields = els.leadForm.querySelectorAll('.bl-field--error');
+    for (i = 0; i < fields.length; i++) fields[i].classList.remove('bl-field--error');
+    var errs = els.leadForm.querySelectorAll('.bl-field__error');
+    for (i = 0; i < errs.length; i++) errs[i].parentNode.removeChild(errs[i]);
+    var consentErr = els.leadForm.querySelector('.bl-consent--error');
+    if (consentErr) consentErr.classList.remove('bl-consent--error');
   }
 
-  async function sendMessage(text) {
-    const value = String(text || "").trim();
-    if (!value || loading) return;
-    loading = true; lastMessage = value; sendButton.disabled = true; input.disabled = true;
-    addMessage(value, "user"); input.value = ""; input.style.height = "auto";
-    const typing = document.createElement("div"); typing.className = "bl-message bot bl-typing"; typing.setAttribute("aria-label", "Concierge is typing"); typing.innerHTML = "<i></i><i></i><i></i>"; messages.appendChild(typing); scrollToEnd();
-    try {
-      const response = await request(value);
-      typing.remove(); addMessage(response || "Thank you for reaching out.");
-      const wantsContact = /consult|attorney|lawyer|case|matter|contact|call me|reach out|follow up|get in touch/i;
-      if ((wantsContact.test(value) || wantsContact.test(response)) && !leadShown) showLeadForm();
-    } catch (error) {
-      typing.remove(); addMessage(friendlyError(error), "bot", { error: true, retry: lastMessage });
-    } finally { loading = false; sendButton.disabled = false; input.disabled = false; input.focus(); }
+  function showLeadErrors(errors) {
+    clearLeadErrors();
+    Object.keys(errors).forEach(function (name) {
+      var field = els.leadForm[name];
+      if (!field) return;
+      var wrapper;
+      if (name === 'consent') {
+        wrapper = field.closest('.bl-consent');
+        if (wrapper) wrapper.classList.add('bl-consent--error');
+      } else {
+        wrapper = field.closest('.bl-field');
+        if (wrapper) wrapper.classList.add('bl-field--error');
+      }
+      if (!wrapper) return;
+      var errEl = document.createElement('div');
+      errEl.className = 'bl-field__error';
+      errEl.textContent = errors[name];
+      wrapper.appendChild(errEl);
+    });
+    var firstErr = els.leadForm.querySelector('.bl-field--error .bl-field__input, .bl-consent--error input');
+    if (firstErr) firstErr.focus();
   }
 
-  function openWidget() {
-    lastFocused = document.activeElement;
-    panel.dataset.open = "true"; launcher.style.display = "none"; launcher.setAttribute("aria-expanded", "true");
-    setTimeout(() => input.focus(), 0);
-  }
-  function closeWidget() {
-    panel.dataset.open = "false"; launcher.style.display = "flex"; launcher.setAttribute("aria-expanded", "false");
-    if (lastFocused && typeof lastFocused.focus === "function") lastFocused.focus(); else launcher.focus();
+  function handleLeadSubmit(e) {
+    e.preventDefault();
+    if (state.isSending) return;
+
+    var data = collectLeadData();
+    var errors = validateLead(data);
+    if (Object.keys(errors).length) {
+      showLeadErrors(errors);
+      return;
+    }
+    clearLeadErrors();
+
+    var summary =
+      'Introduction submitted — ' + data.fullName +
+      ' · ' + data.matterType + '. ' + data.summary;
+
+    addMessage(summary, 'out', { meta: 'Introduction · ' + data.fullName });
+
+    state.leadSubmitted = true;
+    hideLeadForm();
+    if (!state.hasInteracted) {
+      state.hasInteracted = true;
+      hideChips();
+    }
+
+    sendMessageToWebhook(summary, {
+      eventType: 'lead-capture',
+      metadata: { lead: data }
+    });
   }
 
-  launcher.addEventListener("click", openWidget);
-  shadow.querySelector(".bl-minimize").addEventListener("click", closeWidget);
-  shadow.querySelector(".bl-close").addEventListener("click", closeWidget);
-  form.addEventListener("submit", (event) => { event.preventDefault(); sendMessage(input.value); });
-  input.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" && !event.shiftKey && !event.isComposing && event.keyCode !== 229) { event.preventDefault(); form.requestSubmit(); }
-  });
-  input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = `${Math.min(input.scrollHeight, 100)}px`; });
-  shadow.addEventListener("keydown", (event) => { if (event.key === "Escape" && panel.dataset.open === "true") closeWidget(); });
+  /* ================================================================
+   * Webhook communication
+   * ================================================================ */
+  function sendMessageToWebhook(text, opts) {
+    opts = opts || {};
 
-  addMessage("Welcome to Blackstone Legal. I'm the firm's intake assistant — I can outline our practice areas and arrange a consultation. Please share only general, non-confidential information. How may I assist?");
-  addSuggestions();
+    // DEMO MODE: do not perform any network call. Show a polite inline
+    // notice after a brief "composing" pause. No console output.
+    if (DEMO_MODE) {
+      var demoTyping = addTypingIndicator();
+      setTimeout(function () {
+        if (demoTyping.parentNode) demoTyping.parentNode.removeChild(demoTyping);
+        addMessage(
+          'The firm\'s secure intake system is not yet connected. Please telephone our chambers directly, or use the link below to request a consultation.',
+          'in',
+          { meta: 'System' }
+        );
+      }, 700);
+      return;
+    }
+
+    state.isSending = true;
+    els.sendBtn.disabled = true;
+    var typing = addTypingIndicator();
+
+    var payload = {
+      chatInput:  text,
+      sessionId:  state.sessionId,
+      eventType:  opts.eventType || 'message',
+      source:     CONFIG.source,
+      industry:   CONFIG.industry,
+      pageUrl:    location.href,
+      pageTitle:  document.title,
+      timestamp:  new Date().toISOString(),
+      metadata:   Object.assign({}, opts.metadata || {})
+    };
+
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function () { controller.abort(); }, CONFIG.timeout);
+
+    fetch(CONFIG.webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+      credentials: 'omit'
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text().then(function (txt) {
+        var trimmed = (txt || '').trim();
+        if (!trimmed) return '';
+        try { return JSON.parse(trimmed); }
+        catch (e) { return trimmed; }
+      });
+    }).then(function (data) {
+      clearTimeout(timeoutId);
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      var reply = extractResponseText(data);
+      addMessage(
+        reply || 'Your message has been received. A member of the firm will respond shortly.',
+        'in',
+        { meta: 'Chambers' }
+      );
+    }).catch(function (err) {
+      clearTimeout(timeoutId);
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      var isAbort = err && err.name === 'AbortError';
+      addMessage(
+        isAbort
+          ? 'Our apologies — the response was delayed. Please try again in a moment.'
+          : 'Our apologies — we were unable to deliver your message just now. Please try again, or contact the firm directly.',
+        'in',
+        { meta: 'System' }
+      );
+    }).then(function () {
+      state.isSending = false;
+      els.sendBtn.disabled = false;
+    });
+  }
+
+  /* ================================================================
+   * Boot
+   * ================================================================ */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();
