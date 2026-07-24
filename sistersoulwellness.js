@@ -1,328 +1,807 @@
-(() => {
+/*!
+ * Chatling Embeddable Widget
+ * Usage:
+ *   <script src="https://your-host/widget.js"
+ *     data-webhook-url="https://n8n.example.com/webhook/xxxx"
+ *     data-title="Chat with us"
+ *     data-subtitle="We reply in a few minutes"
+ *     data-primary-color="#6d28d9"
+ *     data-position="right"
+ *     data-welcome="Hi! How can we help?"
+ *     data-placeholder="Type a message..."
+ *     defer></script>
+ */
+(function () {
   "use strict";
+  if (window.__chatlingWidgetLoaded) return;
+  window.__chatlingWidgetLoaded = true;
 
-  if (window.__SISTER_SOUL_WIDGET_LOADED__) return;
-  window.__SISTER_SOUL_WIDGET_LOADED__ = true;
+  var script =
+    document.currentScript ||
+    (function () {
+      var s = document.getElementsByTagName("script");
+      return s[s.length - 1];
+    })();
 
-  const loader = document.currentScript;
-  const config = {
-    webhookUrl: loader?.dataset.webhookUrl || "",
-    position: loader?.dataset.position === "left" ? "left" : "right",
-    collectiveUrl:
-      loader?.dataset.collectiveUrl ||
-      "https://www.sistersoulwellness.com/join-the-collective",
-    timeout: Number(loader?.dataset.timeout) || 30000,
+  function attr(name, fallback) {
+    var v = script && script.getAttribute("data-" + name);
+    return v == null || v === "" ? fallback : v;
+  }
+
+  var config = {
+    webhookUrl: attr("webhook-url", ""),
+    title: attr("title", "Chat with us"),
+    subtitle: attr("subtitle", "We typically reply in a few minutes"),
+    primaryColor: attr("primary-color", "#6d28d9"),
+    accentColor: attr("accent-color", ""),
+    position: attr("position", "right"),
+    welcome: attr("welcome", "Hi 👋 How can we help you today?"),
+    placeholder: attr("placeholder", "Type your message..."),
+    brandName: attr("brand-name", ""),
+    avatarUrl: attr("avatar-url", ""),
+    sessionKey: attr("session-key", "chatling:session"),
+    historyKey: attr("history-key", "chatling:history"),
+    leadCapture: attr("lead-capture", "auto"), // auto | off | required
+    leadTitle: attr("lead-title", "Stay in touch"),
+    leadSubtitle: attr(
+      "lead-subtitle",
+      "Leave your details and we'll follow up if we get disconnected.",
+    ),
+    leadSubmitLabel: attr("lead-submit-label", "Continue"),
+    // pipe-separated field spec, each field: key:type:label[:required][:placeholder]
+    // types: text | email | tel | url | number | textarea | select(opt1;opt2;opt3)
+    leadFields: attr(
+      "lead-fields",
+      "name:text:Your name|email:email:Email address:required",
+    ),
+    analytics: attr("analytics", "on"),
+    quickReplies: attr("quick-replies", ""), // pipe separated
+    bgTheme: attr("bg-theme", "light"), // light|dark|sunset|ocean|mint|lavender|dots|grid|custom
+    bgColor: attr("bg-color", ""),
+    bgImage: attr("bg-image", ""),
   };
 
-  const icons = {
-    chat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15a4 4 0 0 1-4 4H9l-5 3v-6a4 4 0 0 1-1-2.6V8a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v7Z"/></svg>',
-    close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
-    minimize: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>',
-    send: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></svg>',
-    arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>',
-  };
-
-  const css = `
-    :host { all: initial; color-scheme: light; }
-    *, *::before, *::after { box-sizing: border-box; }
-    button, input, textarea { font: inherit; }
-    button, a { -webkit-tap-highlight-color: transparent; }
-    .ssw-root {
-      --plum: #5b315f;
-      --cream: #fbf6ed;
-      --sand: #e7ddcf;
-      --ink: #312630;
-      --gold: #ba965b;
-      position: fixed; z-index: 2147483000; bottom: 20px;
-      ${config.position}: 20px;
-      font-family: Arial, Helvetica, sans-serif; color: var(--ink);
-      text-rendering: optimizeLegibility;
-    }
-    .ssw-launcher {
-      width: 62px; height: 62px; border: 1px solid rgba(255,255,255,.32);
-      border-radius: 50%; background: var(--plum); color: var(--cream);
-      box-shadow: 0 12px 30px rgba(49,38,48,.24); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: transform .2s ease, box-shadow .2s ease;
-    }
-    .ssw-launcher:hover { transform: translateY(-2px); box-shadow: 0 15px 34px rgba(49,38,48,.3); }
-    .ssw-launcher svg { width: 27px; height: 27px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-    .ssw-panel {
-      display: none; flex-direction: column; overflow: hidden;
-      width: min(390px, calc(100vw - 32px)); height: min(650px, calc(100vh - 40px));
-      margin-bottom: 12px; border: 1px solid var(--sand); border-radius: 18px;
-      background: var(--cream); box-shadow: 0 22px 60px rgba(49,38,48,.25);
-    }
-    .ssw-panel[data-open="true"] { display: flex; animation: ssw-in .22s ease-out; }
-    @keyframes ssw-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
-    .ssw-header {
-      min-height: 79px; padding: 16px 16px 14px 18px; background: var(--plum); color: var(--cream);
-      display: flex; align-items: center; gap: 12px;
-    }
-    .ssw-mark {
-      width: 39px; height: 39px; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.38);
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      font-family: Georgia, 'Times New Roman', serif; font-size: 21px;
-    }
-    .ssw-head-copy { min-width: 0; flex: 1; }
-    .ssw-title { margin: 0; font: 600 19px/1.2 Georgia, 'Times New Roman', serif; letter-spacing: -.01em; }
-    .ssw-status { margin: 5px 0 0; font-size: 12px; color: rgba(251,246,237,.82); }
-    .ssw-icon-btn { width: 34px; height: 34px; border: 0; border-radius: 50%; color: inherit; background: transparent; cursor: pointer; display: grid; place-items: center; }
-    .ssw-icon-btn:hover { background: rgba(255,255,255,.1); }
-    .ssw-icon-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
-    .ssw-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 16px 14px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
-    .ssw-message { max-width: 86%; padding: 11px 13px; border-radius: 14px; font-size: 14px; line-height: 1.52; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .ssw-message.bot { align-self: flex-start; background: #f1e8dc; border-bottom-left-radius: 4px; }
-    .ssw-message.user { align-self: flex-end; background: var(--plum); color: var(--cream); border-bottom-right-radius: 4px; }
-    .ssw-message.error { border: 1px solid var(--gold); background: var(--cream); }
-    .ssw-retry { margin-top: 8px; border: 0; padding: 0; color: var(--plum); background: transparent; font-weight: 700; text-decoration: underline; cursor: pointer; }
-    .ssw-suggestions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 2px; }
-    .ssw-chip { border: 1px solid #cdbda9; border-radius: 999px; padding: 8px 11px; color: var(--plum); background: transparent; font-size: 12px; cursor: pointer; }
-    .ssw-chip:hover { border-color: var(--plum); background: #f1e8dc; }
-    .ssw-typing { display: flex; gap: 4px; align-items: center; width: 54px; }
-    .ssw-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--plum); opacity: .4; animation: ssw-dot 1.1s infinite; }
-    .ssw-typing i:nth-child(2) { animation-delay: .15s; } .ssw-typing i:nth-child(3) { animation-delay: .3s; }
-    @keyframes ssw-dot { 45% { opacity: 1; transform: translateY(-2px); } }
-    .ssw-lead { margin-top: 3px; padding: 15px; border: 1px solid var(--sand); border-radius: 14px; background: #f1e8dc; }
-    .ssw-lead h3 { margin: 0 0 5px; font: 600 18px/1.25 Georgia, 'Times New Roman', serif; color: var(--plum); }
-    .ssw-lead p { margin: 0 0 12px; font-size: 12px; line-height: 1.45; }
-    .ssw-fields { display: grid; gap: 9px; }
-    .ssw-field label { display: block; margin-bottom: 4px; font-size: 12px; font-weight: 700; }
-    .ssw-field input { width: 100%; min-height: 40px; border: 1px solid #cdbda9; border-radius: 8px; padding: 9px 10px; background: var(--cream); color: var(--ink); font-size: 14px; outline: none; }
-    .ssw-field input:focus, .ssw-compose textarea:focus { border-color: var(--plum); box-shadow: 0 0 0 2px rgba(91,49,95,.13); }
-    .ssw-consent { display: flex; align-items: flex-start; gap: 8px; margin: 11px 0; font-size: 11px; line-height: 1.4; }
-    .ssw-consent input { width: 16px; height: 16px; margin: 0; accent-color: var(--plum); flex: 0 0 auto; }
-    .ssw-submit { width: 100%; min-height: 40px; border: 0; border-radius: 999px; padding: 9px 14px; background: var(--plum); color: var(--cream); font-weight: 700; cursor: pointer; }
-    .ssw-submit:disabled { opacity: .55; cursor: not-allowed; }
-    .ssw-form-error { min-height: 16px; margin: 7px 0 0; color: #7c312e; font-size: 11px; }
-    .ssw-footer { border-top: 1px solid var(--sand); background: var(--cream); }
-    .ssw-collective { margin: 12px 14px 0; min-height: 38px; border: 1px solid var(--plum); border-radius: 999px; color: var(--plum); text-decoration: none; font: 700 12px/1 Arial, sans-serif; display: flex; align-items: center; justify-content: center; gap: 7px; }
-    .ssw-collective svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .ssw-compose { padding: 10px 12px 8px; display: flex; gap: 8px; align-items: flex-end; }
-    .ssw-compose textarea { flex: 1; min-height: 42px; max-height: 100px; resize: none; border: 1px solid #cdbda9; border-radius: 12px; padding: 10px 11px; color: var(--ink); background: #fffdf8; font-size: 14px; line-height: 1.35; outline: none; }
-    .ssw-send { width: 42px; height: 42px; flex: 0 0 auto; border: 0; border-radius: 50%; background: var(--plum); color: var(--cream); cursor: pointer; display: grid; place-items: center; }
-    .ssw-send:disabled { opacity: .5; cursor: not-allowed; }
-    .ssw-send svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-    .ssw-note { margin: 0; padding: 0 15px 10px; text-align: center; font-size: 10px; line-height: 1.35; color: #716670; }
-    .ssw-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-    :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-    @media (max-width: 520px) {
-      .ssw-root { bottom: 12px; ${config.position}: 12px; }
-      .ssw-panel { width: calc(100vw - 24px); height: min(680px, calc(100dvh - 24px)); margin-bottom: 0; border-radius: 16px; }
-      .ssw-launcher { width: 58px; height: 58px; margin-top: 10px; margin-${config.position}: 2px; }
-    }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; transition: none !important; } }
-  `;
-
-  const host = document.createElement("div");
-  host.id = "sister-soul-wellness-widget";
-  document.body.appendChild(host);
-  const shadow = host.attachShadow({ mode: "open" });
-  shadow.innerHTML = `
-    <style>${css}</style>
-    <div class="ssw-root">
-      <section class="ssw-panel" data-open="false" role="dialog" aria-modal="false" aria-label="Chat with Sister Soul Guide">
-        <header class="ssw-header">
-          <div class="ssw-mark" aria-hidden="true">S</div>
-          <div class="ssw-head-copy"><h2 class="ssw-title">Sister Soul Guide</h2><p class="ssw-status">Here to help you find your next step</p></div>
-          <button class="ssw-icon-btn ssw-minimize" type="button" aria-label="Minimize chat">${icons.minimize}</button>
-          <button class="ssw-icon-btn ssw-close" type="button" aria-label="Close chat">${icons.close}</button>
-        </header>
-        <div class="ssw-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
-        <footer class="ssw-footer">
-          <a class="ssw-collective" href="${escapeAttr(config.collectiveUrl)}" target="_blank" rel="noopener noreferrer">Join the Collective ${icons.arrow}</a>
-          <form class="ssw-compose">
-            <label class="ssw-sr" for="ssw-input">Message Sister Soul Guide</label>
-            <textarea id="ssw-input" rows="1" maxlength="1200" placeholder="Ask about wellness, resources, or products…"></textarea>
-            <button class="ssw-send" type="submit" aria-label="Send message">${icons.send}</button>
-          </form>
-          <p class="ssw-note">General educational guidance only—not medical advice. For urgent concerns, contact local emergency services or a qualified professional.</p>
-        </footer>
-      </section>
-      <button class="ssw-launcher" type="button" aria-label="Open Sister Soul Guide" aria-expanded="false">${icons.chat}</button>
-    </div>`;
-
-  const panel = shadow.querySelector(".ssw-panel");
-  const launcher = shadow.querySelector(".ssw-launcher");
-  const messages = shadow.querySelector(".ssw-messages");
-  const form = shadow.querySelector(".ssw-compose");
-  const input = shadow.querySelector("#ssw-input");
-  const sendButton = shadow.querySelector(".ssw-send");
-  let loading = false;
-  let lastMessage = "";
-  let leadShown = false;
-
-  function escapeAttr(value) {
-    return String(value).replace(/[&"'<>]/g, (char) => ({ "&": "&amp;", '"': "&quot;", "'": "&#39;", "<": "&lt;", ">": "&gt;" })[char]);
+  if (!config.webhookUrl) {
+    console.warn("[chatling] Missing data-webhook-url; widget disabled.");
+    return;
   }
 
-  function sessionId() {
-    const key = "sisterSoulWellnessSessionId";
-    try {
-      let id = window.localStorage.getItem(key);
-      if (!id) {
-        id = crypto.randomUUID ? crypto.randomUUID() : `ssw-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        window.localStorage.setItem(key, id);
-      }
-      return id;
-    } catch (_) {
-      return `ssw-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    }
-  }
-  const currentSessionId = sessionId();
-
-  function scrollToEnd() { messages.scrollTop = messages.scrollHeight; }
-
-  function addMessage(text, type = "bot", options = {}) {
-    const item = document.createElement("div");
-    item.className = `ssw-message ${type}${options.error ? " error" : ""}`;
-    item.textContent = text;
-    if (options.retry) {
-      const retry = document.createElement("button");
-      retry.type = "button"; retry.className = "ssw-retry"; retry.textContent = "Try again";
-      retry.addEventListener("click", () => { item.remove(); sendMessage(options.retry); });
-      item.appendChild(document.createElement("br")); item.appendChild(retry);
-    }
-    messages.appendChild(item); scrollToEnd(); return item;
-  }
-
-  function addSuggestions() {
-    const wrap = document.createElement("div"); wrap.className = "ssw-suggestions";
-    [
-      ["Explore Soul Work", "What is Soul Work and where should I begin?"],
-      ["Find my circle", "Tell me about Sister Circle."],
-      ["Product guidance", "Can you help me find a wellness product or resource?"],
-      ["Talk with the team", "I'd like the Sister Soul team to contact me."],
-    ].forEach(([label, prompt]) => {
-      const button = document.createElement("button"); button.type = "button"; button.className = "ssw-chip"; button.textContent = label;
-      button.addEventListener("click", () => { wrap.remove(); if (label === "Talk with the team") showLeadForm(); else sendMessage(prompt); });
-      wrap.appendChild(button);
+  // ---------- session + storage ----------
+  function uuid() {
+    if (crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      var r = (Math.random() * 16) | 0,
+        v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
     });
-    messages.appendChild(wrap); scrollToEnd();
   }
 
-  function showLeadForm() {
-    if (leadShown) return;
-    leadShown = true;
-    const card = document.createElement("form"); card.className = "ssw-lead"; card.noValidate = true;
-    card.innerHTML = `<h3>Let&apos;s stay connected</h3><p>Share your contact details and the Sister Soul Wellness team can follow up. Please don&apos;t include private medical information.</p>
-      <div class="ssw-fields">
-        <div class="ssw-field"><label for="ssw-name">Name</label><input id="ssw-name" name="name" autocomplete="name" maxlength="80" required></div>
-        <div class="ssw-field"><label for="ssw-email">Email</label><input id="ssw-email" name="email" type="email" autocomplete="email" maxlength="120" required></div>
-        <div class="ssw-field"><label for="ssw-phone">Phone</label><input id="ssw-phone" name="phone" type="tel" autocomplete="tel" maxlength="30" required></div>
-      </div>
-      <label class="ssw-consent"><input name="consent" type="checkbox" required><span>I agree that Sister Soul Wellness may contact me about my request.</span></label>
-      <button class="ssw-submit" type="submit">Send my details</button><p class="ssw-form-error" role="alert"></p>`;
-    messages.appendChild(card); scrollToEnd(); card.querySelector("input").focus();
-    card.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const data = new FormData(card);
-      const name = String(data.get("name") || "").trim();
-      const email = String(data.get("email") || "").trim();
-      const phone = String(data.get("phone") || "").trim();
-      const error = card.querySelector(".ssw-form-error");
-      if (!name || !/^\S+@\S+\.\S+$/.test(email) || phone.replace(/\D/g, "").length < 7 || !data.get("consent")) {
-        error.textContent = "Please enter a valid name, email, phone number, and confirm consent."; return;
-      }
-      const button = card.querySelector(".ssw-submit"); button.disabled = true; button.textContent = "Sending…"; error.textContent = "";
+  var storage = {
+    get: function (k) {
       try {
-        await request("I'd like the Sister Soul Wellness team to contact me.", "lead", { name, email, phone, consent: true });
-        card.remove(); addMessage("Thank you. Your details were shared with the Sister Soul Wellness team, and someone can follow up with you soon.");
-      } catch (err) {
-        error.textContent = friendlyError(err); button.disabled = false; button.textContent = "Send my details";
+        return localStorage.getItem(k);
+      } catch (_) {
+        return null;
       }
+    },
+    set: function (k, v) {
+      try {
+        localStorage.setItem(k, v);
+      } catch (_) {}
+    },
+    remove: function (k) {
+      try {
+        localStorage.removeItem(k);
+      } catch (_) {}
+    },
+  };
+
+  var sessionId = storage.get(config.sessionKey);
+  if (!sessionId) {
+    sessionId = uuid();
+    storage.set(config.sessionKey, sessionId);
+  }
+
+  var history = [];
+  try {
+    history = JSON.parse(storage.get(config.historyKey) || "[]");
+  } catch (_) {
+    history = [];
+  }
+  var lead = null;
+  try {
+    lead = JSON.parse(storage.get(config.sessionKey + ":lead") || "null");
+  } catch (_) {
+    lead = null;
+  }
+
+  function saveHistory() {
+    storage.set(config.historyKey, JSON.stringify(history.slice(-100)));
+  }
+
+  // ---------- host + shadow DOM ----------
+  var host = document.createElement("div");
+  host.id = "chatling-widget-host";
+  host.style.cssText =
+    "position:fixed;z-index:2147483647;bottom:0;" +
+    (config.position === "left" ? "left:0;" : "right:0;") +
+    "width:0;height:0;";
+  document.body.appendChild(host);
+  var root = host.attachShadow({ mode: "open" });
+
+  var primary = config.primaryColor;
+  var accent = config.accentColor || primary;
+
+  var style = document.createElement("style");
+  style.textContent =
+    "*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,sans-serif}" +
+    ".launcher{position:fixed;bottom:24px;" +
+    (config.position === "left" ? "left:24px;" : "right:24px;") +
+    "width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg," +
+    primary +
+    "," +
+    accent +
+    ");color:#fff;border:none;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;transition:transform .25s cubic-bezier(.34,1.56,.64,1),box-shadow .25s;animation:cl-pop .5s cubic-bezier(.34,1.56,.64,1)}" +
+    ".launcher:hover{transform:scale(1.08)}" +
+    ".launcher:active{transform:scale(.95)}" +
+    ".launcher svg{width:28px;height:28px;transition:transform .3s}" +
+    ".launcher .close-icon{position:absolute;opacity:0;transform:rotate(-90deg)}" +
+    ".launcher.open .chat-icon{opacity:0;transform:rotate(90deg)}" +
+    ".launcher.open .close-icon{opacity:1;transform:rotate(0)}" +
+    ".badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 6px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.2)}" +
+    ".panel{position:fixed;bottom:100px;" +
+    (config.position === "left" ? "left:24px;" : "right:24px;") +
+    "width:380px;max-width:calc(100vw - 32px);height:600px;max-height:calc(100vh - 130px);background:#fff;border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.25),0 10px 30px rgba(0,0,0,.1);display:flex;flex-direction:column;overflow:hidden;opacity:0;transform:translateY(20px) scale(.96);transform-origin:bottom " +
+    (config.position === "left" ? "left" : "right") +
+    ";pointer-events:none;transition:opacity .3s cubic-bezier(.4,0,.2,1),transform .3s cubic-bezier(.34,1.56,.64,1)}" +
+    ".panel.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}" +
+    ".header{background:linear-gradient(135deg," +
+    primary +
+    "," +
+    accent +
+    ");color:#fff;padding:20px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}" +
+    ".header:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 20% 0%,rgba(255,255,255,.2),transparent 50%);pointer-events:none}" +
+    ".avatar{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0;overflow:hidden;position:relative;z-index:1}" +
+    ".avatar img{width:100%;height:100%;object-fit:cover}" +
+    ".header-text{flex:1;min-width:0;position:relative;z-index:1}" +
+    ".title{font-weight:600;font-size:16px;line-height:1.2;margin:0 0 3px}" +
+    ".subtitle{font-size:12px;opacity:.85;display:flex;align-items:center;gap:6px}" +
+    ".dot{width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:cl-pulse 2s infinite}" +
+    ".header-actions{display:flex;gap:6px;position:relative;z-index:1}" +
+    ".close-btn,.clear-btn{background:rgba(255,255,255,.15);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}" +
+    ".close-btn:hover,.clear-btn:hover{background:rgba(255,255,255,.25)}" +
+    ".confirm{background:#fff;padding:14px 16px;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.06);animation:cl-in .3s}" +
+    ".confirm p{margin:0 0 10px;font-size:13px;color:#111827}" +
+    ".confirm-actions{display:flex;gap:8px}" +
+    ".confirm button{flex:1;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .2s}" +
+    ".confirm .yes{background:#ef4444;color:#fff}" +
+    ".confirm .no{background:#f3f4f6;color:#374151}" +
+    ".confirm button:hover{opacity:.9}" +
+    ".messages{flex:1;overflow-y:auto;padding:20px;background:#f8fafc;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;transition:background .3s ease}" +
+    ".messages::-webkit-scrollbar{width:6px}" +
+    ".messages::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}" +
+    ".messages.theme-dark::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2)}" +
+    ".msg{max-width:80%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.45;word-wrap:break-word;animation:cl-in .3s cubic-bezier(.34,1.56,.64,1);white-space:pre-wrap}" +
+    ".msg.bot{align-self:flex-start;background:#fff;color:#111827;border-bottom-left-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.06)}" +
+    ".messages.theme-dark .msg.bot{background:#1e293b;color:#f1f5f9;box-shadow:0 1px 2px rgba(0,0,0,.3)}" +
+    ".messages.theme-dark .typing{background:#1e293b}" +
+    ".messages.theme-dark .typing span{background:#64748b}" +
+    ".messages.theme-dark .lead,.messages.theme-dark .confirm{background:#1e293b;color:#f1f5f9}" +
+    ".messages.theme-dark .lead h4,.messages.theme-dark .confirm p{color:#f1f5f9}" +
+    ".messages.theme-dark .lead p{color:#94a3b8}" +
+    ".messages.theme-dark .lead input{background:#0f172a;border-color:#334155;color:#f1f5f9}" +
+    ".messages.theme-dark .confirm .no{background:#334155;color:#f1f5f9}" +
+    ".msg.user{align-self:flex-end;background:linear-gradient(135deg," +
+    primary +
+    "," +
+    accent +
+    ");color:#fff;border-bottom-right-radius:4px}" +
+    ".typing{align-self:flex-start;background:#fff;padding:12px 16px;border-radius:16px;border-bottom-left-radius:4px;display:flex;gap:4px;box-shadow:0 1px 2px rgba(0,0,0,.06);animation:cl-in .2s ease}" +
+    ".typing span{width:7px;height:7px;background:#9ca3af;border-radius:50%;animation:cl-bounce 1.4s infinite}" +
+    ".typing span:nth-child(2){animation-delay:.15s}" +
+    ".typing span:nth-child(3){animation-delay:.3s}" +
+    ".quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}" +
+    ".quick button{background:#fff;border:1px solid " +
+    primary +
+    "33;color:" +
+    primary +
+    ";padding:8px 12px;border-radius:999px;font-size:13px;cursor:pointer;transition:all .2s;font-weight:500}" +
+    ".quick button:hover{background:" +
+    primary +
+    ";color:#fff;transform:translateY(-1px);box-shadow:0 4px 10px " +
+    primary +
+    "40}" +
+    ".lead{background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.06);animation:cl-in .3s}" +
+    ".lead h4{margin:0 0 4px;font-size:14px;color:#111827}" +
+    ".lead p{margin:0 0 12px;font-size:12px;color:#6b7280}" +
+    ".lead input,.lead textarea,.lead select{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;margin-bottom:8px;outline:none;transition:border-color .2s;font-family:inherit;background:#fff;color:#111827;box-sizing:border-box}" +
+    ".lead textarea{min-height:72px;resize:vertical}" +
+    ".lead input:focus,.lead textarea:focus,.lead select:focus{border-color:" +
+    primary +
+    "}" +
+    ".lead label.field{display:block;margin-bottom:8px}" +
+    ".lead label.field .lbl{display:block;font-size:12px;font-weight:500;color:#374151;margin-bottom:4px}" +
+    ".lead label.field .lbl .req{color:#ef4444;margin-left:2px}" +
+    ".messages.theme-dark .lead textarea,.messages.theme-dark .lead select{background:#0f172a;border-color:#334155;color:#f1f5f9}" +
+    ".messages.theme-dark .lead label.field .lbl{color:#cbd5e1}" +
+    ".lead button{width:100%;background:" +
+    primary +
+    ";color:#fff;border:none;padding:10px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s}" +
+    ".lead button:hover{opacity:.9}" +
+    ".lead .skip{background:transparent;color:#6b7280;margin-top:4px;padding:6px;font-weight:400}" +
+    ".composer{border-top:1px solid #e5e7eb;padding:12px;background:#fff;display:flex;gap:8px;align-items:flex-end}" +
+    ".composer textarea{flex:1;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font-size:14px;resize:none;outline:none;max-height:100px;min-height:40px;font-family:inherit;transition:border-color .2s}" +
+    ".composer textarea:focus{border-color:" +
+    primary +
+    "}" +
+    ".send{background:" +
+    primary +
+    ";color:#fff;border:none;width:40px;height:40px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s,opacity .2s}" +
+    ".send:hover:not(:disabled){transform:scale(1.05)}" +
+    ".send:disabled{opacity:.4;cursor:not-allowed}" +
+    ".footer{text-align:center;padding:6px;font-size:11px;color:#9ca3af;background:#fff;border-top:1px solid #f3f4f6}" +
+    ".footer a{color:#9ca3af;text-decoration:none}" +
+    "@keyframes cl-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}" +
+    "@keyframes cl-pop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}" +
+    "@keyframes cl-pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}" +
+    "@keyframes cl-bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-6px);opacity:1}}" +
+    "@media(max-width:480px){.panel{width:100vw;max-width:100vw;height:100vh;max-height:100vh;bottom:0;right:0;left:0;border-radius:0}}";
+  root.appendChild(style);
+
+  // ---------- markup ----------
+  var wrap = document.createElement("div");
+  wrap.innerHTML =
+    '<button class="launcher" aria-label="Open chat">' +
+    '<svg class="chat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+    '<svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>' +
+    '<span class="badge" style="display:none">1</span>' +
+    "</button>" +
+    '<div class="panel" role="dialog" aria-label="Chat">' +
+    '<div class="header">' +
+    '<div class="avatar">' +
+    (config.avatarUrl
+      ? '<img src="' + escapeAttr(config.avatarUrl) + '" alt="">'
+      : escapeHtml((config.brandName || config.title || "C").charAt(0).toUpperCase())) +
+    "</div>" +
+    '<div class="header-text">' +
+    '<div class="title">' +
+    escapeHtml(config.title) +
+    "</div>" +
+    '<div class="subtitle"><span class="dot"></span>' +
+    escapeHtml(config.subtitle) +
+    "</div>" +
+    "</div>" +
+    '<div class="header-actions">' +
+    '<button class="clear-btn" aria-label="Clear conversation" title="Clear conversation"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>' +
+    '<button class="close-btn" aria-label="Close chat"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' +
+    "</div>" +
+    "</div>" +
+    '<div class="messages" role="log" aria-live="polite"></div>' +
+    '<form class="composer">' +
+    '<textarea rows="1" placeholder="' +
+    escapeAttr(config.placeholder) +
+    '" aria-label="Message"></textarea>' +
+    '<button type="submit" class="send" aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 14-7-7 14-2-5-5-2z"/></svg></button>' +
+    "</form>" +
+    '<div class="footer">Powered by <a href="#" target="_blank" rel="noopener">Chatling</a></div>' +
+    "</div>";
+  root.appendChild(wrap);
+
+  var launcher = root.querySelector(".launcher");
+  var badge = root.querySelector(".badge");
+  var panel = root.querySelector(".panel");
+  var messagesEl = root.querySelector(".messages");
+
+  // ---------- background theme ----------
+  var THEMES = {
+    light: { bg: "#f8fafc", dark: false },
+    dark: { bg: "#0f172a", dark: true },
+    sunset: { bg: "linear-gradient(160deg,#fef3c7 0%,#fecaca 60%,#fbcfe8 100%)", dark: false },
+    ocean: { bg: "linear-gradient(160deg,#dbeafe 0%,#bfdbfe 60%,#c7d2fe 100%)", dark: false },
+    mint: { bg: "linear-gradient(160deg,#ecfdf5 0%,#d1fae5 60%,#a7f3d0 100%)", dark: false },
+    lavender: { bg: "linear-gradient(160deg,#ede9fe 0%,#ddd6fe 60%,#fbcfe8 100%)", dark: false },
+    dots: {
+      bg: "#f8fafc radial-gradient(circle,#cbd5e1 1px,transparent 1px) 0 0/16px 16px",
+      dark: false,
+    },
+    grid: {
+      bg: "#f8fafc linear-gradient(#e2e8f0 1px,transparent 1px) 0 0/22px 22px",
+      dark: false,
+    },
+  };
+  function applyTheme() {
+    var t = THEMES[config.bgTheme] || THEMES.light;
+    var bg = t.bg;
+    if (config.bgTheme === "custom" || config.bgColor || config.bgImage) {
+      bg = config.bgColor || "#f8fafc";
+      if (config.bgImage) bg += " url('" + config.bgImage + "') center/cover no-repeat";
+    }
+    messagesEl.style.background = bg;
+    messagesEl.classList.toggle("theme-dark", !!t.dark);
+  }
+  applyTheme();
+  var closeBtn = root.querySelector(".close-btn");
+  var clearBtn = root.querySelector(".clear-btn");
+  var form = root.querySelector(".composer");
+  var textarea = root.querySelector("textarea");
+  var sendBtn = root.querySelector(".send");
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function escapeAttr(s) {
+    return escapeHtml(s);
+  }
+
+  // ---------- rendering ----------
+  function scrollBottom() {
+    requestAnimationFrame(function () {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     });
   }
 
-  function endpointReady() {
-    return /^https?:\/\//i.test(config.webhookUrl) && !/YOUR_|REPLACE|example\.com/i.test(config.webhookUrl);
-  }
-
-  async function request(chatInput, eventType = "message", lead = null) {
-    if (!endpointReady()) throw new Error("SETUP");
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), config.timeout);
-    const payload = {
-      chatInput,
-      sessionId: currentSessionId,
-      eventType,
-      source: "sister-soul-widget",
-      pageUrl: window.location.href,
-      pageTitle: document.title,
-      timestamp: new Date().toISOString(),
-      metadata: { source: "sister-soul-widget", pageUrl: window.location.href, pageTitle: document.title },
-      ...(lead ? { lead, name: lead.name, email: lead.email, phone: lead.phone, consent: lead.consent } : {}),
-    };
-    try {
-      const response = await fetch(config.webhookUrl, {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json, text/plain" },
-        body: JSON.stringify(payload), signal: controller.signal,
-      });
-      if (!response.ok) throw new Error(`HTTP_${response.status}`);
-      const raw = await response.text();
-      if (eventType === "lead" && !raw.trim()) return "ok";
-      let parsed;
-      try { parsed = JSON.parse(raw); } catch (_) { parsed = raw; }
-      const value = parseResponse(parsed);
-      if (!value && eventType !== "lead") throw new Error("EMPTY");
-      return value || "ok";
-    } finally { clearTimeout(timer); }
-  }
-
-  function parseResponse(data) {
-    if (typeof data === "string") return data.trim();
-    if (Array.isArray(data)) return data.length ? parseResponse(data[0]) : "";
-    if (!data || typeof data !== "object") return "";
-    for (const key of ["output", "text", "message", "response", "answer", "content"]) {
-      if (typeof data[key] === "string") return data[key].trim();
-      if (data[key] && typeof data[key] === "object") {
-        const nested = parseResponse(data[key]); if (nested) return nested;
-      }
+  function addMessage(role, text, save) {
+    var el = document.createElement("div");
+    el.className = "msg " + (role === "user" ? "user" : "bot");
+    el.textContent = text;
+    messagesEl.appendChild(el);
+    scrollBottom();
+    if (save !== false) {
+      history.push({ role: role, text: text, ts: Date.now() });
+      saveHistory();
     }
-    if (data.body) return parseResponse(data.body);
-    return "";
+    if (role === "bot" && !isOpen) bumpBadge();
   }
 
-  function friendlyError(error) {
-    if (error?.message === "SETUP") return "The guide is not connected yet. Add your n8n webhook URL to the widget script.";
-    if (error?.name === "AbortError") return "The guide took too long to respond. Please try again.";
-    return "I couldn't connect just now. Please try again or use the Join the Collective link below.";
+  function addQuickReplies(items) {
+    if (!items || !items.length) return;
+    var box = document.createElement("div");
+    box.className = "quick";
+    items.forEach(function (label) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = label;
+      b.onclick = function () {
+        box.remove();
+        sendMessage(label);
+      };
+      box.appendChild(b);
+    });
+    messagesEl.appendChild(box);
+    scrollBottom();
   }
 
-  async function sendMessage(text) {
-    const value = String(text || "").trim();
-    if (!value || loading) return;
-    loading = true; lastMessage = value; sendButton.disabled = true; input.disabled = true;
-    addMessage(value, "user"); input.value = ""; input.style.height = "auto";
-    const typing = document.createElement("div"); typing.className = "ssw-message bot ssw-typing"; typing.setAttribute("aria-label", "Sister Soul Guide is typing"); typing.innerHTML = "<i></i><i></i><i></i>"; messages.appendChild(typing); scrollToEnd();
+  function showTyping() {
+    var t = document.createElement("div");
+    t.className = "typing";
+    t.innerHTML = "<span></span><span></span><span></span>";
+    t.dataset.typing = "1";
+    messagesEl.appendChild(t);
+    scrollBottom();
+    return t;
+  }
+
+  function bumpBadge() {
+    var n = parseInt(badge.textContent || "0", 10) + 1;
+    badge.textContent = n;
+    badge.style.display = "flex";
+  }
+  function clearBadge() {
+    badge.textContent = "0";
+    badge.style.display = "none";
+  }
+
+  // ---------- lead capture ----------
+  var leadPromptShown = false;
+  function maybeShowLeadCapture() {
+    if (config.leadCapture === "off") return;
+    if (lead) return;
+    if (leadPromptShown) return;
+    // trigger after 2 user messages, or immediately if required
+    var userMsgs = history.filter(function (m) {
+      return m.role === "user";
+    }).length;
+    if (config.leadCapture !== "required" && userMsgs < 2) return;
+    leadPromptShown = true;
+    renderLeadForm();
+  }
+
+  // Parse a pipe-separated field spec into a structured array.
+  // Each field: "key:type:label[:required][:placeholder]"
+  // Type may be "select(opt1;opt2;opt3)" for a dropdown.
+  function parseFieldSpec(spec) {
+    if (!spec) return [];
+    return spec
+      .split("|")
+      .map(function (raw) {
+        var s = raw.trim();
+        if (!s) return null;
+        var parts = s.split(":");
+        var key = (parts[0] || "").trim();
+        if (!key) return null;
+        var typeRaw = (parts[1] || "text").trim();
+        var label = (parts[2] || key).trim();
+        var required = false;
+        var placeholder = "";
+        for (var i = 3; i < parts.length; i++) {
+          var p = parts[i].trim();
+          if (p === "required") required = true;
+          else if (p) placeholder = p;
+        }
+        var options = null;
+        var type = typeRaw;
+        var selMatch = /^select\((.+)\)$/i.exec(typeRaw);
+        if (selMatch) {
+          type = "select";
+          options = selMatch[1].split(";").map(function (o) { return o.trim(); }).filter(Boolean);
+        }
+        return {
+          key: key,
+          type: type,
+          label: label,
+          required: required,
+          placeholder: placeholder,
+          options: options,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function escapeAttr(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  // Render a form (lead capture or bot-triggered inline form).
+  // opts: { title, subtitle, fields, submitLabel, allowSkip, onSubmit, onSkip }
+  function renderForm(opts) {
+    var box = document.createElement("form");
+    box.className = "lead";
+    box.setAttribute("novalidate", "");
+    var html = "";
+    if (opts.title) html += "<h4>" + escapeAttr(opts.title) + "</h4>";
+    if (opts.subtitle) html += "<p>" + escapeAttr(opts.subtitle) + "</p>";
+    opts.fields.forEach(function (f) {
+      var id = "cl-f-" + Math.random().toString(36).slice(2, 8);
+      var req = f.required ? ' <span class="req" aria-hidden="true">*</span>' : "";
+      html += '<label class="field" for="' + id + '">';
+      html += '<span class="lbl">' + escapeAttr(f.label) + req + "</span>";
+      var ph = escapeAttr(f.placeholder || "");
+      var reqAttr = f.required ? " required" : "";
+      var name = escapeAttr(f.key);
+      if (f.type === "textarea") {
+        html +=
+          '<textarea id="' + id + '" name="' + name + '" placeholder="' + ph + '"' + reqAttr +
+          " rows=\"3\"></textarea>";
+      } else if (f.type === "select") {
+        html += '<select id="' + id + '" name="' + name + '"' + reqAttr + ">";
+        if (!f.required) html += '<option value="">Select…</option>';
+        (f.options || []).forEach(function (o) {
+          html += '<option value="' + escapeAttr(o) + '">' + escapeAttr(o) + "</option>";
+        });
+        html += "</select>";
+      } else {
+        var t = ["email", "tel", "url", "number"].indexOf(f.type) >= 0 ? f.type : "text";
+        var autocomplete = "";
+        if (f.key === "name") autocomplete = ' autocomplete="name"';
+        else if (t === "email") autocomplete = ' autocomplete="email"';
+        else if (t === "tel") autocomplete = ' autocomplete="tel"';
+        html +=
+          '<input id="' + id + '" type="' + t + '" name="' + name + '" placeholder="' + ph + '"' +
+          autocomplete + reqAttr + ">";
+      }
+      html += "</label>";
+    });
+    html += '<button type="submit" data-act="submit">' +
+      escapeAttr(opts.submitLabel || "Submit") + "</button>";
+    if (opts.allowSkip) {
+      html += '<button type="button" class="skip" data-act="skip">Not now</button>';
+    }
+    box.innerHTML = html;
+    messagesEl.appendChild(box);
+    scrollBottom();
+
+    function collect() {
+      var values = {};
+      var firstInvalid = null;
+      opts.fields.forEach(function (f) {
+        var el = box.querySelector('[name="' + f.key + '"]');
+        if (!el) return;
+        var v = String(el.value || "").trim();
+        el.style.borderColor = "";
+        var bad = false;
+        if (f.required && !v) bad = true;
+        else if (v && f.type === "email" && !/^\S+@\S+\.\S+$/.test(v)) bad = true;
+        else if (v && f.type === "url" && !/^https?:\/\//i.test(v)) bad = true;
+        if (bad) {
+          el.style.borderColor = "#ef4444";
+          if (!firstInvalid) firstInvalid = el;
+        }
+        values[f.key] = v;
+      });
+      if (firstInvalid) {
+        firstInvalid.focus();
+        return null;
+      }
+      return values;
+    }
+
+    box.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var values = collect();
+      if (!values) return;
+      opts.onSubmit(values, box);
+    });
+    var skipBtn = box.querySelector('[data-act="skip"]');
+    if (skipBtn) {
+      skipBtn.addEventListener("click", function () {
+        opts.onSkip && opts.onSkip(box);
+      });
+    }
+    return box;
+  }
+
+  function renderLeadForm() {
+    var fields = parseFieldSpec(config.leadFields);
+    if (!fields.length) {
+      fields = [
+        { key: "name", type: "text", label: "Your name", required: false, placeholder: "" },
+        { key: "email", type: "email", label: "Email address", required: true, placeholder: "" },
+      ];
+    }
+    renderForm({
+      title: config.leadTitle,
+      subtitle: config.leadSubtitle,
+      fields: fields,
+      submitLabel: config.leadSubmitLabel,
+      allowSkip: config.leadCapture !== "required",
+      onSubmit: function (values, box) {
+        lead = Object.assign({}, values, { capturedAt: Date.now() });
+        storage.set(config.sessionKey + ":lead", JSON.stringify(lead));
+        box.remove();
+        var greetName = values.name || values.firstName || "";
+        addMessage(
+          "bot",
+          greetName
+            ? "Thanks " + greetName + "! You're all set. 🎉"
+            : "Thanks — we got your details. 🎉",
+        );
+        track("lead_captured", { fields: Object.keys(values) });
+        postToWebhook({ type: "lead", lead: lead });
+      },
+      onSkip: function (box) {
+        box.remove();
+        track("lead_skipped");
+      },
+    });
+  }
+
+  // Render a bot-triggered inline form. Bot reply may include:
+  //   { form: { id, title, description, submitLabel, fields: [...] } }
+  // where each field matches parseFieldSpec output.
+  function renderBotForm(form) {
+    var fields = Array.isArray(form.fields) ? form.fields.filter(function (f) {
+      return f && f.key;
+    }) : [];
+    if (!fields.length) return;
+    renderForm({
+      title: form.title || "",
+      subtitle: form.description || form.subtitle || "",
+      fields: fields,
+      submitLabel: form.submitLabel || "Submit",
+      allowSkip: false,
+      onSubmit: function (values, box) {
+        // Lock the form after submit
+        box.querySelectorAll("input,select,textarea,button").forEach(function (el) {
+          el.disabled = true;
+        });
+        addMessage("bot", "Thanks — sent. ✅");
+        track("form_submitted", { formId: form.id || null, fields: Object.keys(values) });
+        postToWebhook({
+          type: "form_submission",
+          formId: form.id || null,
+          form: { title: form.title || "", fields: fields.map(function (f) { return f.key; }) },
+          values: values,
+        });
+      },
+    });
+  }
+
+
+  // ---------- transport ----------
+  function postToWebhook(extra) {
+    var payload = Object.assign(
+      {
+        sessionId: sessionId,
+        pageUrl: location.href,
+        pageTitle: document.title,
+        referrer: document.referrer || "",
+        userAgent: navigator.userAgent,
+        lang: navigator.language,
+        lead: lead,
+        timestamp: new Date().toISOString(),
+      },
+      extra || {},
+    );
+    return fetch(config.webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  function track(event, data) {
+    if (config.analytics === "off") return;
+    // fire-and-forget analytics event to same webhook
     try {
-      const response = await request(value);
-      typing.remove(); addMessage(response || "Thank you for reaching out.");
-      const wantsContact = /contact|call|email|speak|talk|reach out|follow up|share (your|you're|ur)? ?(info|contact|details)|get in touch/i;
-      if ((wantsContact.test(value) || wantsContact.test(response)) && !leadShown) showLeadForm();
-    } catch (error) {
-      typing.remove(); addMessage(friendlyError(error), "bot", { error: true, retry: lastMessage });
-    } finally { loading = false; sendButton.disabled = false; input.disabled = false; input.focus(); }
+      postToWebhook({ type: "event", event: event, data: data || {} }).catch(function () {});
+    } catch (_) {}
   }
 
-  function openWidget() {
-    panel.dataset.open = "true"; launcher.style.display = "none"; launcher.setAttribute("aria-expanded", "true");
-    setTimeout(() => input.focus(), 0);
-  }
-  function closeWidget() {
-    panel.dataset.open = "false"; launcher.style.display = "flex"; launcher.setAttribute("aria-expanded", "false"); launcher.focus();
+  var busy = false;
+  function sendMessage(text) {
+    text = String(text || "").trim();
+    if (!text || busy) return;
+    addMessage("user", text);
+    textarea.value = "";
+    autosize();
+    busy = true;
+    sendBtn.disabled = true;
+    var typing = showTyping();
+
+    postToWebhook({ type: "message", message: text, history: history.slice(-20) })
+      .then(function (r) {
+        return r.text().then(function (t) {
+          try {
+            return JSON.parse(t);
+          } catch (_) {
+            return { reply: t };
+          }
+        });
+      })
+      .then(function (data) {
+        typing.remove();
+        var reply =
+          (data && (data.reply || data.output || data.text || data.message)) ||
+          "Thanks — we'll get back to you shortly.";
+        // n8n often wraps in [{...}]
+        var first = Array.isArray(data) && data.length ? data[0] : null;
+        if (first) {
+          reply = first.reply || first.output || first.text || reply;
+        }
+        var payloadForExtras = first || data || {};
+        addMessage("bot", String(reply));
+        if (Array.isArray(payloadForExtras.quickReplies)) {
+          addQuickReplies(payloadForExtras.quickReplies);
+        }
+        if (payloadForExtras.form && typeof payloadForExtras.form === "object") {
+          renderBotForm(payloadForExtras.form);
+        } else {
+          maybeShowLeadCapture();
+        }
+      })
+      .catch(function () {
+        typing.remove();
+        addMessage("bot", "Sorry — something went wrong. Please try again.");
+      })
+      .finally(function () {
+        busy = false;
+        sendBtn.disabled = false;
+        textarea.focus();
+      });
   }
 
-  launcher.addEventListener("click", openWidget);
-  shadow.querySelector(".ssw-minimize").addEventListener("click", closeWidget);
-  shadow.querySelector(".ssw-close").addEventListener("click", closeWidget);
-  form.addEventListener("submit", (event) => { event.preventDefault(); sendMessage(input.value); });
-  input.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" && !event.shiftKey && !event.isComposing && event.keyCode !== 229) { event.preventDefault(); form.requestSubmit(); }
+  // ---------- interactions ----------
+  var isOpen = false;
+  function openPanel() {
+    isOpen = true;
+    panel.classList.add("open");
+    launcher.classList.add("open");
+    clearBadge();
+    setTimeout(function () {
+      textarea.focus();
+    }, 200);
+    track("open");
+  }
+  function closePanel() {
+    isOpen = false;
+    panel.classList.remove("open");
+    launcher.classList.remove("open");
+    track("close");
+  }
+  launcher.addEventListener("click", function () {
+    isOpen ? closePanel() : openPanel();
   });
-  input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = `${Math.min(input.scrollHeight, 100)}px`; });
-  shadow.addEventListener("keydown", (event) => { if (event.key === "Escape" && panel.dataset.open === "true") closeWidget(); });
+  closeBtn.addEventListener("click", closePanel);
 
-  addMessage("Welcome, Sister. I’m Sister Soul Guide, an AI assistant here to help you explore wellness resources, community offerings, and products. What gentle next step can I help you find?");
-  addSuggestions();
+  function clearConversation() {
+    history = [];
+    lead = null;
+    leadPromptShown = false;
+    storage.remove(config.historyKey);
+    storage.remove(config.sessionKey + ":lead");
+    messagesEl.innerHTML = "";
+    clearBadge();
+    addMessage("bot", config.welcome, true);
+    var quick = config.quickReplies
+      ? config.quickReplies.split("|").map(function (s) { return s.trim(); }).filter(Boolean)
+      : [];
+    if (quick.length) addQuickReplies(quick);
+    track("conversation_cleared");
+  }
+
+  clearBtn.addEventListener("click", function () {
+    if (messagesEl.querySelector(".confirm")) return;
+    var box = document.createElement("div");
+    box.className = "confirm";
+    box.innerHTML =
+      "<p>Clear this conversation? This can't be undone.</p>" +
+      '<div class="confirm-actions">' +
+      '<button type="button" class="no" data-act="no">Cancel</button>' +
+      '<button type="button" class="yes" data-act="yes">Clear</button>' +
+      "</div>";
+    messagesEl.appendChild(box);
+    scrollBottom();
+    box.querySelector('[data-act="yes"]').onclick = function () {
+      box.remove();
+      clearConversation();
+    };
+    box.querySelector('[data-act="no"]').onclick = function () { box.remove(); };
+  });
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    sendMessage(textarea.value);
+  });
+  textarea.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(textarea.value);
+    }
+  });
+  function autosize() {
+    textarea.style.height = "auto";
+    textarea.style.height = Math.min(textarea.scrollHeight, 100) + "px";
+  }
+  textarea.addEventListener("input", autosize);
+
+  // ---------- boot ----------
+  if (history.length) {
+    history.forEach(function (m) {
+      addMessage(m.role, m.text, false);
+    });
+  } else {
+    addMessage("bot", config.welcome, true);
+    var quick = config.quickReplies
+      ? config.quickReplies.split("|").map(function (s) {
+          return s.trim();
+        }).filter(Boolean)
+      : [];
+    if (quick.length) addQuickReplies(quick);
+  }
+  track("loaded");
+
+  // public API
+  window.Chatling = {
+    open: openPanel,
+    close: closePanel,
+    send: sendMessage,
+    reset: function () {
+      history = [];
+      lead = null;
+      storage.remove(config.historyKey);
+      storage.remove(config.sessionKey + ":lead");
+      messagesEl.innerHTML = "";
+      addMessage("bot", config.welcome, true);
+    },
+    setLead: function (l) {
+      lead = l;
+      storage.set(config.sessionKey + ":lead", JSON.stringify(l));
+    },
+  };
 })();
