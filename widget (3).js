@@ -56,6 +56,9 @@
     ),
     analytics: attr("analytics", "on"),
     quickReplies: attr("quick-replies", ""), // pipe separated
+    // Comma-separated field keys used when a "buttons" formTrigger is clicked
+    // directly (i.e. not accompanied by an AI-issued lead_form message).
+    formTriggerFields: attr("form-trigger-fields", "name,email,phone,message"),
     bgTheme: attr("bg-theme", "light"), // light|dark|sunset|ocean|mint|lavender|dots|grid|custom
     bgColor: attr("bg-color", ""),
     bgImage: attr("bg-image", ""),
@@ -431,7 +434,7 @@
           renderBotForm({
             title: "Send Us Your Enquiry",
             submitLabel: "Send Enquiry",
-            fields: ["name", "email", "phone", "productInterest", "budget", "message"],
+            fields: config.formTriggerFields.split(",").map(function (s) { return s.trim(); }).filter(Boolean),
           });
         } else if (it.url) {
           window.open(it.url, "_blank", "noopener");
@@ -504,6 +507,8 @@
     email: { type: "email", label: "Email address", required: true, placeholder: "" },
     phone: { type: "tel", label: "Phone number", required: false, placeholder: "" },
     productInterest: { type: "text", label: "Product interest", required: false, placeholder: "" },
+    propertyInterest: { type: "text", label: "Buying, renting, or selling?", required: false, placeholder: "" },
+    location: { type: "text", label: "Preferred location", required: false, placeholder: "" },
     budget: { type: "text", label: "Budget", required: false, placeholder: "" },
     message: { type: "textarea", label: "Message", required: false, placeholder: "" },
   };
