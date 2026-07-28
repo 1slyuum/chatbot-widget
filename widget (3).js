@@ -211,6 +211,21 @@
     ";color:#fff;transform:translateY(-1px);box-shadow:0 4px 10px " +
     primary +
     "40}" +
+    ".actions{display:flex;flex-direction:column;gap:8px;margin-top:2px}" +
+    ".action-btn{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:border-color .2s,transform .15s;width:100%}" +
+    ".action-btn:hover{border-color:" +
+    primary +
+    ";transform:translateY(-1px)}" +
+    ".action-label{font-size:13px;font-weight:600;color:#111827}" +
+    ".action-subtitle{font-size:12px;color:#6b7280}" +
+    ".messages.theme-dark .action-btn{background:#1e293b;border-color:#334155}" +
+    ".messages.theme-dark .action-label{color:#f1f5f9}" +
+    ".messages.theme-dark .action-subtitle{color:#94a3b8}" +
+    ".msg.bot strong{font-weight:700}" +
+    ".msg.bot a{color:" +
+    primary +
+    ";text-decoration:underline}" +
+    ".msg.bot ul{margin:4px 0;padding-left:18px}" +
     ".lead{background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.06);animation:cl-in .3s}" +
     ".lead h4{margin:0 0 4px;font-size:14px;color:#111827}" +
     ".lead p{margin:0 0 12px;font-size:12px;color:#6b7280}" +
@@ -342,17 +357,90 @@
     });
   }
 
-  function addMessage(role, text, save) {
+  function addMessage(role, text, save, isHtml) {
     var el = document.createElement("div");
     el.className = "msg " + (role === "user" ? "user" : "bot");
-    el.textContent = text;
+    if (isHtml) {
+      el.innerHTML = text;
+    } else {
+      el.textContent = text;
+    }
     messagesEl.appendChild(el);
     scrollBottom();
     if (save !== false) {
-      history.push({ role: role, text: text, ts: Date.now() });
+      history.push({ role: role, text: text, ts: Date.now(), html: !!isHtml });
       saveHistory();
     }
     if (role === "bot" && !isOpen) bumpBadge();
+  }
+
+  // Lightweight markdown -> safe HTML (bold, links, bullet lists, line breaks).
+  // Input is escaped first, so this never introduces raw HTML from the model.
+  function renderMarkdown(src) {
+    var text = escapeHtml(String(src == null ? "" : src));
+    text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function (m, label, url) {
+      return '<a href="' + url + '" target="_blank" rel="noopener">' + label + "</a>";
+    });
+    text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    var out = [];
+    var listBuf = [];
+    function flushList() {
+      if (listBuf.length) {
+        out.push(
+          "<ul>" +
+            listBuf
+              .map(function (i) {
+                return "<li>" + i + "</li>";
+              })
+              .join("") +
+            "</ul>",
+        );
+        listBuf = [];
+      }
+    }
+    text.split("\n").forEach(function (line) {
+      var m = /^\s*-\s+(.*)$/.exec(line);
+      if (m) {
+        listBuf.push(m[1]);
+      } else {
+        flushList();
+        out.push(line);
+      }
+    });
+    flushList();
+    return out.join("<br>");
+  }
+
+  // Cards rendered from an AI "buttons" message: each item either opens a
+  // URL in a new tab, or (formTrigger: true) opens the in-chat enquiry form.
+  function addActionButtons(items) {
+    if (!items || !items.length) return;
+    var box = document.createElement("div");
+    box.className = "actions";
+    items.forEach(function (it) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "action-btn";
+      var html = '<span class="action-label">' + escapeHtml(it.label || "") + "</span>";
+      if (it.subtitle) {
+        html += '<span class="action-subtitle">' + escapeHtml(it.subtitle) + "</span>";
+      }
+      b.innerHTML = html;
+      b.onclick = function () {
+        if (it.formTrigger) {
+          renderBotForm({
+            title: "Send Us Your Enquiry",
+            submitLabel: "Send Enquiry",
+            fields: ["name", "email", "phone", "productInterest", "budget", "message"],
+          });
+        } else if (it.url) {
+          window.open(it.url, "_blank", "noopener");
+        }
+      };
+      box.appendChild(b);
+    });
+    messagesEl.appendChild(box);
+    scrollBottom();
   }
 
   function addQuickReplies(items) {
@@ -406,6 +494,24 @@
     if (config.leadCapture !== "required" && userMsgs < 2) return;
     leadPromptShown = true;
     renderLeadForm();
+  }
+
+  // Default field specs for the AI agent's lead_form contract, which only
+  // sends plain field-name strings (name, email, phone, productInterest,
+  // budget, message) rather than full field objects.
+  var LEAD_FIELD_DEFAULTS = {
+    name: { type: "text", label: "Full name", required: false, placeholder: "" },
+    email: { type: "email", label: "Email address", required: true, placeholder: "" },
+    phone: { type: "tel", label: "Phone number", required: false, placeholder: "" },
+    productInterest: { type: "text", label: "Product interest", required: false, placeholder: "" },
+    budget: { type: "text", label: "Budget", required: false, placeholder: "" },
+    message: { type: "textarea", label: "Message", required: false, placeholder: "" },
+  };
+  function expandLeadFields(keys) {
+    return (keys || []).map(function (k) {
+      var d = LEAD_FIELD_DEFAULTS[k] || { type: "text", label: k, required: false, placeholder: "" };
+      return Object.assign({ key: k }, d);
+    });
   }
 
   // Parse a pipe-separated field spec into a structured array.
@@ -585,9 +691,15 @@
   //   { form: { id, title, description, submitLabel, fields: [...] } }
   // where each field matches parseFieldSpec output.
   function renderBotForm(form) {
-    var fields = Array.isArray(form.fields) ? form.fields.filter(function (f) {
-      return f && f.key;
-    }) : [];
+    var rawFields = Array.isArray(form.fields) ? form.fields : [];
+    // The AI agent's lead_form message sends plain strings, e.g. "email";
+    // expand those into full field specs. Already-expanded objects pass through.
+    var fields = rawFields
+      .map(function (f) {
+        if (typeof f === "string") return expandLeadFields([f])[0];
+        return f && f.key ? f : null;
+      })
+      .filter(Boolean);
     if (!fields.length) return;
     renderForm({
       title: form.title || "",
@@ -602,11 +714,12 @@
         });
         addMessage("bot", "Thanks — sent. ✅");
         track("form_submitted", { formId: form.id || null, fields: Object.keys(values) });
+        // Matches the n8n workflow's "Is Lead Form Submission?" check and the
+        // fields its "Prepare Lead Data" node reads (body.formData.*, body.page.*).
         postToWebhook({
-          type: "form_submission",
-          formId: form.id || null,
-          form: { title: form.title || "", fields: fields.map(function (f) { return f.key; }) },
-          values: values,
+          messageType: "lead_form_submit",
+          formData: values,
+          page: { url: location.href, timestamp: new Date().toISOString() },
         });
       },
     });
@@ -666,21 +779,44 @@
       })
       .then(function (data) {
         typing.remove();
+        // n8n sometimes wraps the payload in an array: [{...}]
+        var first = Array.isArray(data) && data.length ? data[0] : data;
+        first = first || {};
+
+        // Primary contract (ShopNova workflow): { messages: [ {type, ...}, ... ] }
+        // where type is one of text | markdown | buttons | lead_form.
+        if (Array.isArray(first.messages) && first.messages.length) {
+          var sawForm = false;
+          first.messages.forEach(function (msg) {
+            if (!msg || !msg.type) return;
+            if (msg.type === "text") {
+              addMessage("bot", String(msg.content || ""));
+            } else if (msg.type === "markdown") {
+              addMessage("bot", renderMarkdown(msg.content || ""), true, true);
+            } else if (msg.type === "buttons") {
+              addActionButtons(msg.items || []);
+            } else if (msg.type === "lead_form") {
+              sawForm = true;
+              renderBotForm(msg);
+            }
+          });
+          if (!sawForm) maybeShowLeadCapture();
+          return;
+        }
+
+        // Fallback for a simpler { reply, quickReplies, form } contract.
         var reply =
-          (data && (data.reply || data.output || data.text || data.message)) ||
+          first.reply ||
+          first.output ||
+          first.text ||
+          first.message ||
           "Thanks — we'll get back to you shortly.";
-        // n8n often wraps in [{...}]
-        var first = Array.isArray(data) && data.length ? data[0] : null;
-        if (first) {
-          reply = first.reply || first.output || first.text || reply;
-        }
-        var payloadForExtras = first || data || {};
         addMessage("bot", String(reply));
-        if (Array.isArray(payloadForExtras.quickReplies)) {
-          addQuickReplies(payloadForExtras.quickReplies);
+        if (Array.isArray(first.quickReplies)) {
+          addQuickReplies(first.quickReplies);
         }
-        if (payloadForExtras.form && typeof payloadForExtras.form === "object") {
-          renderBotForm(payloadForExtras.form);
+        if (first.form && typeof first.form === "object") {
+          renderBotForm(first.form);
         } else {
           maybeShowLeadCapture();
         }
@@ -773,7 +909,7 @@
   // ---------- boot ----------
   if (history.length) {
     history.forEach(function (m) {
-      addMessage(m.role, m.text, false);
+      addMessage(m.role, m.text, false, !!m.html);
     });
   } else {
     addMessage("bot", config.welcome, true);
