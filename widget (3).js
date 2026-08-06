@@ -1,5 +1,5 @@
 /*!
- * chatbotify Embeddable Widget — with Analytics
+ * Chatling Embeddable Widget — with Analytics
  * Usage:
  *   <script src="https://your-host/widget.js"
  *     data-webhook-url="https://n8n.example.com/webhook/xxxx"
@@ -8,13 +8,16 @@
  *     data-primary-color="#6d28d9"
  *     data-position="right"
  *     data-welcome="Hi! How can we help?"
+ *     data-client-id="client-123"
+ *     data-widget-version="2.0.0"
  *     data-placeholder="Type a message..."
  *     defer></script>
  */
 (function () {
   "use strict";
-  if (window.__chatbotifyWidgetLoaded) return;
-  window.__chatbotifyWidgetLoaded = true;
+  var widgetScriptStartTs = Date.now();
+  if (window.__chatlingWidgetLoaded) return;
+  window.__chatlingWidgetLoaded = true;
 
   var script =
     document.currentScript ||
@@ -39,8 +42,8 @@
     placeholder: attr("placeholder", "Type your message..."),
     brandName: attr("brand-name", ""),
     avatarUrl: attr("avatar-url", ""),
-    sessionKey: attr("session-key", "chatbotify:session"),
-    historyKey: attr("history-key", "chatbotify:history"),
+    sessionKey: attr("session-key", "chatling:session"),
+    historyKey: attr("history-key", "chatling:history"),
     leadCapture: attr("lead-capture", "auto"), // auto | off | required
     leadTitle: attr("lead-title", "Stay in touch"),
     leadSubtitle: attr(
@@ -57,10 +60,13 @@
     bgTheme: attr("bg-theme", "light"),
     bgColor: attr("bg-color", ""),
     bgImage: attr("bg-image", ""),
+    schemaVersion: attr("schema-version", "1.0.0"),
+    widgetVersion: attr("widget-version", "2.0.0"),
+    clientId: attr("client-id", attr("clinic-id", "unknown")),
   };
 
   if (!config.webhookUrl) {
-    console.warn("[chatbotify] Missing data-webhook-url; widget disabled.");
+    console.warn("[chatling] Missing data-webhook-url; widget disabled.");
     return;
   }
 
@@ -68,7 +74,7 @@
 
   /** Generate a UUID */
   function uuid() {
-    if (crypto && crypto.randomUUID) return crypto.randomUUID();
+    if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
     return "xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx".replace(/[xy]/g, function (c) {
       var r = (Math.random() * 16) | 0,
         v = c === "x" ? r : (r & 0x3) | 0x8;
@@ -105,21 +111,23 @@
   // ─── Identity & Session ───────────────────────────────────────────────────
 
   /** Persistent visitor ID (survives session resets) */
-  var visitorId = storage.get("chatbotify:visitor");
+  var visitorId = storage.get("chatling:visitor");
   if (!visitorId) {
     visitorId = uuid();
-    storage.set("chatbotify:visitor", visitorId);
+    storage.set("chatling:visitor", visitorId);
   }
 
-  /** Session ID — cleared on reset */
+  /** Session ID — a completed session gets a fresh ID on the next load */
+  var sessionEndedKey = config.sessionKey + ":ended";
   var sessionId = storage.get(config.sessionKey);
-  if (!sessionId) {
+  if (!sessionId || storage.get(sessionEndedKey) === "1") {
     sessionId = uuid();
     storage.set(config.sessionKey, sessionId);
+    storage.remove(sessionEndedKey);
   }
 
-  var firstVisit = !storage.get("chatbotify:visitor_seen");
-  if (firstVisit) storage.set("chatbotify:visitor_seen", "1");
+  var firstVisit = !storage.get("chatling:visitor_seen");
+  if (firstVisit) storage.set("chatling:visitor_seen", "1");
 
   /** History & lead */
   var history = [];
@@ -197,6 +205,16 @@
     leadCompleted: false,
     funnelStep: "widget_loaded", // current funnel step
     formStartTs: {},   // formId → start timestamp
+    onceKeys: {},
+    sessionEndSent: false,
+    sessionTimeoutTimer: null,
+    exitReason: null,
+    performance: {
+      widgetLoadTimeMs: null,
+      initializationTimeMs: null,
+      requestDurationsMs: [],
+      webhookResponseTimesMs: [],
+    },
     MAX_RETRY: 3,
     BATCH_SIZE: 10,
     FLUSH_INTERVAL: 5000, // ms
@@ -206,8 +224,12 @@
    * Build the standard envelope every event must carry.
    * @returns {Object}
    */
-  function buildEnvelope() {
+  function buildEnvelope(eventId) {
     return {
+      event_id: eventId || uuid(),
+      schema_version: config.schemaVersion,
+      widget_version: config.widgetVersion,
+      client_id: config.clientId,
       session_id: sessionId,
       visitor_id: visitorId,
       timestamp: new Date().toISOString(),
@@ -230,8 +252,9 @@
    */
   function track(eventName, properties) {
     if (config.analytics === "off") return;
+    if (analytics.sessionEndSent && eventName !== "session_end") return null;
     var id = uuid();
-    var event = Object.assign(buildEnvelope(), {
+    var event = Object.assign(buildEnvelope(id), {
       type: "event",
       event: eventName,
       properties: properties || {},
@@ -242,6 +265,131 @@
     if (analytics.sentIds[id]) return;
     analytics.queue.push(event);
     scheduleSend();
+    if (eventName !== "session_end") markSessionActivity();
+    return id;
+  }
+
+  /**
+   * Record an interaction only once per session. This prevents duplicate
+   * analytics caused by repeated listeners or repeated lifecycle callbacks.
+   */
+  function trackOnce(eventName, key, properties) {
+    var onceKey = key || eventName;
+    if (analytics.onceKeys[onceKey]) return null;
+    analytics.onceKeys[onceKey] = true;
+    return track(eventName, properties);
+  }
+
+  function getWidgetLoadTimeMs() {
+    try {
+      if (typeof performance === "undefined" || !performance.getEntriesByName || !script || !script.src) return null;
+      var entries = performance.getEntriesByName(script.src);
+      if (entries && entries.length && entries[entries.length - 1].duration > 0) {
+        return Math.round(entries[entries.length - 1].duration);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function average(values) {
+    if (!values.length) return null;
+    return Math.round(values.reduce(function (sum, value) { return sum + value; }, 0) / values.length);
+  }
+
+  function performanceSnapshot() {
+    return {
+      widget_load_time_ms: analytics.performance.widgetLoadTimeMs,
+      initialization_time_ms: analytics.performance.initializationTimeMs,
+      webhook_response_time_ms: analytics.performance.webhookResponseTimesMs.length
+        ? analytics.performance.webhookResponseTimesMs[analytics.performance.webhookResponseTimesMs.length - 1]
+        : null,
+      average_request_duration_ms: average(analytics.performance.requestDurationsMs),
+      request_count: analytics.performance.requestDurationsMs.length,
+    };
+  }
+
+  function recordRequestDuration(durationMs, requestType) {
+    if (!isFinite(durationMs)) return;
+    analytics.performance.requestDurationsMs.push(Math.max(0, Math.round(durationMs)));
+    analytics.performance.webhookResponseTimesMs.push(Math.max(0, Math.round(durationMs)));
+    // Keep the in-memory metrics bounded during long-lived sessions.
+    if (analytics.performance.requestDurationsMs.length > 50) analytics.performance.requestDurationsMs.shift();
+    if (analytics.performance.webhookResponseTimesMs.length > 50) analytics.performance.webhookResponseTimesMs.shift();
+    track("performance_metric", {
+      metric: "webhook_response_time",
+      request_type: requestType || "unknown",
+      duration_ms: Math.max(0, Math.round(durationMs)),
+      average_request_duration_ms: average(analytics.performance.requestDurationsMs),
+    });
+  }
+
+  function errorDetails(error) {
+    var message = error && error.message ? String(error.message) : String(error || "Unknown error");
+    var stack = error && error.stack ? String(error.stack) : "";
+    var locationMatch = stack.match(/(?:at .*\()?(.+?):(\d+):(\d+)\)?/);
+    var fileName = locationMatch ? locationMatch[1] : "";
+    var lineNumber = locationMatch ? Number(locationMatch[2]) : null;
+    return {
+      error_message: message,
+      stack_trace: stack || null,
+      file_name: fileName || null,
+      line_number: lineNumber,
+    };
+  }
+
+  function trackError(error, details) {
+    if (
+      details &&
+      details.context === "analytics_delivery" &&
+      details.event_being_executed === "error"
+    ) return;
+    track("error", Object.assign(errorDetails(error), details || {}));
+  }
+
+  window.addEventListener("error", function (event) {
+    trackError(event.error || event.message, {
+      context: "window_error",
+      event_being_executed: "browser_runtime",
+      file_name: event.filename || null,
+      line_number: event.lineno || null,
+    });
+  });
+
+  window.addEventListener("unhandledrejection", function (event) {
+    trackError(event.reason, {
+      context: "unhandled_promise_rejection",
+      event_being_executed: "browser_runtime",
+    });
+  });
+
+  function markSessionActivity() {
+    if (analytics.sessionEndSent) return;
+    clearTimeout(analytics.sessionTimeoutTimer);
+    analytics.sessionTimeoutTimer = setTimeout(function () {
+      endSession("session_timeout");
+    }, 30 * 60 * 1000);
+  }
+
+  function setExitReason(reason) {
+    if (!analytics.sessionEndSent && reason) analytics.exitReason = reason;
+  }
+
+  function endSession(reason) {
+    if (analytics.sessionEndSent) return null;
+    analytics.sessionEndSent = true;
+    clearTimeout(analytics.sessionTimeoutTimer);
+    analytics.exitReason = analytics.exitReason || reason || "page_closed";
+    storage.set(sessionEndedKey, "1");
+    return trackOnce("session_end", "session_end", {
+      exit_reason: analytics.exitReason,
+      session_duration: Math.round((Date.now() - analytics.sessionStartTs) / 1000),
+      conversation_completed: analytics.totalUserMessages > 0,
+      total_messages: analytics.totalUserMessages + analytics.totalBotMessages,
+      user_messages: analytics.totalUserMessages,
+      bot_messages: analytics.totalBotMessages,
+      lead_completed: analytics.leadCompleted,
+      performance: performanceSnapshot(),
+    });
   }
 
   /**
@@ -252,14 +400,14 @@
     if (!analytics.queue.length || analytics.sending) return;
     analytics.sending = true;
     var batch = analytics.queue.splice(0, analytics.BATCH_SIZE);
-    batch.forEach(function (event) {
-      var id = event._id;
+    Promise.all(batch.map(function (event) {
+      var id = event.event_id || event._id;
       var retries = event._retries;
       // Clean internal fields before sending
       var payload = Object.assign({}, event);
       delete payload._id;
       delete payload._retries;
-      fetch(config.webhookUrl, {
+      return fetch(config.webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -267,15 +415,18 @@
       }).then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);
         analytics.sentIds[id] = true;
-      }).catch(function () {
+      }).catch(function (error) {
         if (retries < analytics.MAX_RETRY) {
           event._retries = retries + 1;
           analytics.queue.push(event); // re-queue for retry
+        } else {
+          trackError(error, { context: "analytics_delivery", event_being_executed: event.event });
         }
       });
+    })).finally(function () {
+      analytics.sending = false;
+      if (analytics.queue.length) scheduleSend();
     });
-    analytics.sending = false;
-    if (analytics.queue.length) scheduleSend();
   }
 
   var _flushTimer = null;
@@ -290,20 +441,58 @@
   // Periodic flush for long sessions
   setInterval(flushQueue, analytics.FLUSH_INTERVAL);
 
-  // Flush on page unload
-  window.addEventListener("beforeunload", function () {
-    if (!analytics.queue.length) return;
-    var payload = {
-      type: "event",
-      event: "session_end",
-      session_duration: Math.round((Date.now() - analytics.sessionStartTs) / 1000),
-      conversation_completed: analytics.totalUserMessages > 0,
-    };
-    Object.assign(payload, buildEnvelope());
+  // Flush on page unload. Use one beacon for the session end event so the
+  // browser can deliver it even after the document is being torn down.
+  function sendSessionEndBeacon(reason) {
+    if (analytics.sessionEndSent) return;
+    var eventId = endSession(reason);
+    var eventIndex = -1;
+    for (var i = 0; i < analytics.queue.length; i++) {
+      if (analytics.queue[i].event_id === eventId) {
+        eventIndex = i;
+        break;
+      }
+    }
+    if (eventIndex < 0) return;
+    var event = analytics.queue.splice(eventIndex, 1)[0];
+    var payload = Object.assign({}, event);
+    delete payload._id;
+    delete payload._retries;
     if (navigator.sendBeacon) {
-      navigator.sendBeacon(config.webhookUrl, JSON.stringify(payload));
+      try {
+        var beaconAccepted = navigator.sendBeacon(
+          config.webhookUrl,
+          new Blob([JSON.stringify(payload)], { type: "application/json" })
+        );
+        if (!beaconAccepted) throw new Error("sendBeacon rejected payload");
+      } catch (_) {
+        fetch(config.webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          keepalive: true,
+        }).catch(function (error) {
+          trackError(error, { context: "session_end_delivery", event_being_executed: "session_end" });
+        });
+      }
+    } else {
+      fetch(config.webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(function (error) {
+        trackError(error, { context: "session_end_delivery", event_being_executed: "session_end" });
+      });
     }
     flushQueue();
+  }
+
+  window.addEventListener("beforeunload", function () {
+    sendSessionEndBeacon("page_closed");
+  });
+  window.addEventListener("pagehide", function () {
+    sendSessionEndBeacon("page_closed");
   });
 
   // ─── CTA Click Interceptor ────────────────────────────────────────────────
@@ -338,11 +527,18 @@
       var text = (el.textContent || "").trim();
       var eventName = classifyCTA(href, text);
       track(eventName, {
+        cta_type: eventName,
         button_text: text,
         target_url: href,
+        destination_url: href,
+        current_page_url: location.href,
+        timestamp: new Date().toISOString(),
+        session_id: sessionId,
+        visitor_id: visitorId,
       });
       // Advance funnel if booking click
       if (eventName === "booking_click") {
+        setExitReason("booking_clicked");
         advanceFunnel("booking_cta_clicked");
       }
     });
@@ -379,7 +575,7 @@
   // ─── Shadow DOM & Styles ──────────────────────────────────────────────────
 
   var host = document.createElement("div");
-  host.id = "chatbotify-widget-host";
+  host.id = "chatling-widget-host";
   host.style.cssText =
     "position:fixed;z-index:2147483647;bottom:0;" +
     (config.position === "left" ? "left:0;" : "right:0;") +
@@ -557,7 +753,7 @@
     '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 14-7-7 14-2-5-5-2z"/></svg>' +
     "</button>" +
     "</form>" +
-    '<div class="footer">Powered by <a href="#" target="_blank" rel="noopener">chatbotify</a></div>' +
+    '<div class="footer">Powered by <a href="#" target="_blank" rel="noopener">Chatling</a></div>' +
     "</div>";
   root.appendChild(wrap);
 
@@ -624,7 +820,11 @@
       a.target = "_blank";
       a.rel = "noopener noreferrer";
       trackCTAElement(a);
-      track("cta_displayed", { href: m[0] });
+      track("cta_displayed", {
+        cta_type: classifyCTA(m[0], m[0]),
+        destination_url: m[0],
+        current_page_url: location.href,
+      });
       fragment.appendChild(a);
       last = URL_RE.lastIndex;
     }
@@ -651,7 +851,9 @@
     if (role === "bot" && !isOpen) bumpBadge();
 
     // Analytics
-    if (role === "user") {
+    // Restored messages are rendered for context only and must not be counted
+    // as new interactions or generate duplicate analytics events.
+    if (role === "user" && save !== false) {
       analytics.totalUserMessages++;
       analytics.messageLengths.push(text.length);
       track("message_sent", { length: text.length });
@@ -663,7 +865,7 @@
         advanceFunnel("question_asked");
       }
     }
-    if (role === "bot") {
+    if (role === "bot" && save !== false) {
       analytics.totalBotMessages++;
       if (!analytics.firstResponseTs && analytics.totalUserMessages > 0) {
         analytics.firstResponseTs = Date.now();
@@ -724,7 +926,7 @@
     if (config.leadCapture !== "required" && userMsgs < 2) return;
     leadPromptShown = true;
     analytics.leadShown = true;
-    track("lead_shown");
+    trackOnce("lead_shown", "lead_shown", { fieldCount: parseFieldSpec(config.leadFields).length });
     renderLeadForm();
   }
 
@@ -864,7 +1066,6 @@
       ];
     }
     var formShownTs = Date.now();
-    track("lead_shown", { fieldCount: fields.length });
     renderForm({
       title: config.leadTitle,
       subtitle: config.leadSubtitle,
@@ -879,7 +1080,8 @@
         var greetName = values.name || values.firstName || "";
         addMessage("bot", greetName ? "Thanks " + greetName + "! You're all set. 🎉" : "Thanks — we got your details. 🎉");
         analytics.leadCompleted = true;
-        track("lead_completed", {
+        setExitReason("lead_completed");
+        trackOnce("lead_completed", "lead_completed", {
           fields: Object.keys(values),
           fieldCount: Object.keys(values).length,
           completionTime: Math.round((Date.now() - formShownTs) / 1000),
@@ -930,8 +1132,17 @@
   // ─── Transport ────────────────────────────────────────────────────────────
 
   function postToWebhook(extra) {
+    var transportEventId = uuid();
     var payload = Object.assign(
       {
+        event_id: transportEventId,
+        schema_version: config.schemaVersion,
+        widget_version: config.widgetVersion,
+        client_id: config.clientId,
+        eventId: transportEventId,
+        schemaVersion: config.schemaVersion,
+        widgetVersion: config.widgetVersion,
+        clientId: config.clientId,
         sessionId: sessionId,
         visitorId: visitorId,
         pageUrl: location.href,
@@ -947,10 +1158,18 @@
       },
       extra || {}
     );
+    var requestStartTs = Date.now();
     return fetch(config.webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+    }).then(function (response) {
+      recordRequestDuration(Date.now() - requestStartTs, payload.type || "webhook");
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return response;
+    }, function (error) {
+      recordRequestDuration(Date.now() - requestStartTs, payload.type || "webhook");
+      throw error;
     });
   }
 
@@ -998,6 +1217,9 @@
           track("booking_cta_shown");
           advanceFunnel("booking_cta_shown");
         }
+        if (payloadForExtras.conversationFinished) {
+          setExitReason("conversation_finished");
+        }
         if (Array.isArray(payloadForExtras.quickReplies)) {
           addQuickReplies(payloadForExtras.quickReplies);
         }
@@ -1007,10 +1229,13 @@
           maybeShowLeadCapture();
         }
       })
-      .catch(function () {
+      .catch(function (error) {
         typing.remove();
         addMessage("bot", "Sorry — something went wrong. Please try again.");
-        track("error", { context: "message_send_failed" });
+        trackError(error, {
+          context: "message_send_failed",
+          event_being_executed: "message",
+        });
       })
       .finally(function () {
         busy = false;
@@ -1042,6 +1267,7 @@
     panel.classList.remove("open");
     launcher.classList.remove("open");
     document.body.style.overflow = "";
+    setExitReason("widget_closed");
     track("widget_closed", {
       session_duration: Math.round((Date.now() - analytics.sessionStartTs) / 1000),
       total_messages: analytics.totalUserMessages + analytics.totalBotMessages,
@@ -1148,12 +1374,18 @@
     if (quickList.length) addQuickReplies(quickList);
   }
 
-  track("widget_loaded", {
+  analytics.performance.widgetLoadTimeMs = getWidgetLoadTimeMs();
+  analytics.performance.initializationTimeMs = Date.now() - widgetScriptStartTs;
+  trackOnce("session_start", "session_start", {
+    session_start_reason: "widget_loaded",
+  });
+  trackOnce("widget_loaded", "widget_loaded", {
     first_visit: firstVisit,
     returning_visitor: !firstVisit,
     has_history: history.length > 0,
     page_url: location.href,
     page_title: document.title,
+    performance: performanceSnapshot(),
   });
   advanceFunnel("widget_loaded");
 
@@ -1171,7 +1403,7 @@
 
   // ─── Public API ───────────────────────────────────────────────────────────
 
-  window.chatbotify = {
+  window.Chatling = {
     open: openPanel,
     close: closePanel,
     send: sendMessage,
@@ -1205,6 +1437,11 @@
         leadSkipped: analytics.leadSkipped,
         leadCompleted: analytics.leadCompleted,
         funnelStep: analytics.funnelStep,
+        exitReason: analytics.exitReason,
+        eventSchemaVersion: config.schemaVersion,
+        widgetVersion: config.widgetVersion,
+        clientId: config.clientId,
+        performance: performanceSnapshot(),
         device: env.device,
         browser: env.browser,
         os: env.os,
