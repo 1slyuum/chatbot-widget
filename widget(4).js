@@ -1,5 +1,5 @@
 /*!
- * Chatling Embeddable Widget — with Analytics
+ * chatbotify Embeddable Widget — with Analytics
  * Usage:
  *   <script src="https://your-host/widget.js"
  *     data-webhook-url="https://n8n.example.com/webhook/xxxx"
@@ -16,8 +16,8 @@
 (function () {
   "use strict";
   var widgetScriptStartTs = Date.now();
-  if (window.__chatlingWidgetLoaded) return;
-  window.__chatlingWidgetLoaded = true;
+  if (window.__chatbotifyWidgetLoaded) return;
+  window.__chatbotifyWidgetLoaded = true;
 
   var script =
     document.currentScript ||
@@ -42,8 +42,8 @@
     placeholder: attr("placeholder", "Type your message..."),
     brandName: attr("brand-name", ""),
     avatarUrl: attr("avatar-url", ""),
-    sessionKey: attr("session-key", "chatling:session"),
-    historyKey: attr("history-key", "chatling:history"),
+    sessionKey: attr("session-key", "chatbotify:session"),
+    historyKey: attr("history-key", "chatbotify:history"),
     leadCapture: attr("lead-capture", "auto"), // auto | off | required
     leadTitle: attr("lead-title", "Stay in touch"),
     leadSubtitle: attr(
@@ -66,7 +66,7 @@
   };
 
   if (!config.webhookUrl) {
-    console.warn("[chatling] Missing data-webhook-url; widget disabled.");
+    console.warn("[chatbotify] Missing data-webhook-url; widget disabled.");
     return;
   }
 
@@ -111,10 +111,10 @@
   // ─── Identity & Session ───────────────────────────────────────────────────
 
   /** Persistent visitor ID (survives session resets) */
-  var visitorId = storage.get("chatling:visitor");
+  var visitorId = storage.get("chatbotify:visitor");
   if (!visitorId) {
     visitorId = uuid();
-    storage.set("chatling:visitor", visitorId);
+    storage.set("chatbotify:visitor", visitorId);
   }
 
   /** Session ID — a completed session gets a fresh ID on the next load */
@@ -126,8 +126,8 @@
     storage.remove(sessionEndedKey);
   }
 
-  var firstVisit = !storage.get("chatling:visitor_seen");
-  if (firstVisit) storage.set("chatling:visitor_seen", "1");
+  var firstVisit = !storage.get("chatbotify:visitor_seen");
+  if (firstVisit) storage.set("chatbotify:visitor_seen", "1");
 
   /** History & lead */
   var history = [];
@@ -575,7 +575,7 @@
   // ─── Shadow DOM & Styles ──────────────────────────────────────────────────
 
   var host = document.createElement("div");
-  host.id = "chatling-widget-host";
+  host.id = "chatbotify-widget-host";
   host.style.cssText =
     "position:fixed;z-index:2147483647;bottom:0;" +
     (config.position === "left" ? "left:0;" : "right:0;") +
@@ -753,7 +753,7 @@
     '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 14-7-7 14-2-5-5-2z"/></svg>' +
     "</button>" +
     "</form>" +
-    '<div class="footer">Powered by <a href="#" target="_blank" rel="noopener">Chatling</a></div>' +
+    '<div class="footer">Powered by <a href="#" target="_blank" rel="noopener">chatbotify</a></div>' +
     "</div>";
   root.appendChild(wrap);
 
@@ -1403,7 +1403,7 @@
 
   // ─── Public API ───────────────────────────────────────────────────────────
 
-  window.Chatling = {
+  window.chatbotify = {
     open: openPanel,
     close: closePanel,
     send: sendMessage,
