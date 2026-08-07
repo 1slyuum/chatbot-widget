@@ -30,6 +30,9 @@
 
   var config = {
     webhookUrl: attr("webhook-url", ""),
+    clientId: attr("client-id", "chatbotify-default"),
+    widgetVersion: attr("widget-version", "3.0.0"),
+    schemaVersion: attr("schema-version", "2.0.0"),
     title: attr("title", "Chat with us"),
     subtitle: attr("subtitle", "We typically reply in a few minutes"),
     primaryColor: attr("primary-color", "#6d28d9"),
@@ -53,7 +56,6 @@
       "name:text:Your name|email:email:Email address:required"
     ),
     analytics: attr("analytics", "on"),
-    services: attr("services", ""), // pipe-separated: "cleaning:clean,whitening|checkup:checkup,exam"
     quickReplies: attr("quick-replies", ""),
     bgTheme: attr("bg-theme", "light"),
     bgColor: attr("bg-color", ""),
@@ -176,44 +178,6 @@
     pageTitle: document.title,
   };
 
-  // ─── Service Interest Detection ───────────────────────────────────────────
-  // Optional, clinic-configured. Lets a clinic (dental/medical/wellness/
-  // physio) define its own service taxonomy without hardcoding vocabulary
-  // into the widget. Falls back to no-op if data-services isn't set.
-
-  var SERVICE_TAXONOMY = (function parseServiceSpec(spec) {
-    if (!spec) return [];
-    return spec.split("|").map(function (raw) {
-      var parts = raw.split(":");
-      var category = (parts[0] || "").trim();
-      var keywords = (parts[1] || "")
-        .split(",")
-        .map(function (k) { return k.trim().toLowerCase(); })
-        .filter(Boolean);
-      return category && keywords.length ? { category: category, keywords: keywords } : null;
-    }).filter(Boolean);
-  })(config.services);
-
-  /**
-   * Match a user message against the configured service taxonomy.
-   * @param {string} text
-   * @returns {string[]} matched service category names (may be empty)
-   */
-  function matchServices(text) {
-    if (!SERVICE_TAXONOMY.length || !text) return [];
-    var lower = text.toLowerCase();
-    var matched = [];
-    SERVICE_TAXONOMY.forEach(function (entry) {
-      for (var i = 0; i < entry.keywords.length; i++) {
-        if (lower.indexOf(entry.keywords[i]) !== -1) {
-          matched.push(entry.category);
-          break;
-        }
-      }
-    });
-    return matched;
-  }
-
   // ─── Analytics Engine ─────────────────────────────────────────────────────
 
   /**
@@ -273,6 +237,11 @@
     var event = Object.assign(buildEnvelope(), {
       type: "event",
       event: eventName,
+      event_id: id,
+      event_name: eventName,
+      client_id: config.clientId,
+      widget_version: config.widgetVersion,
+      schema_version: config.schemaVersion,
       properties: properties || {},
       _id: id,
       _retries: 0,
@@ -331,15 +300,16 @@
 
   // Flush on page unload
   window.addEventListener("beforeunload", function () {
-    if (!analytics.queue.length) return;
     var payload = {
       type: "event",
       event: "session_end",
+      event_id: uuid(),
+      event_name: "session_end",
+      client_id: config.clientId,
+      widget_version: config.widgetVersion,
+      schema_version: config.schemaVersion,
       session_duration: Math.round((Date.now() - analytics.sessionStartTs) / 1000),
       conversation_completed: analytics.totalUserMessages > 0,
-      user_messages: analytics.totalUserMessages,
-      bot_messages: analytics.totalBotMessages,
-      funnel_step_at_exit: analytics.funnelStep,
     };
     Object.assign(payload, buildEnvelope());
     if (navigator.sendBeacon) {
@@ -371,14 +341,6 @@
   }
 
   /**
-   * CTA event types that represent real booking intent for a clinic —
-   * not just a literal "book now" link. A patient calling, messaging on
-   * WhatsApp, or opening a booking calendar is converting just as much
-   * as clicking a button labeled "book".
-   */
-  var BOOKING_INTENT_EVENTS = ["booking_click", "calendar_click", "phone_click", "whatsapp_click"];
-
-  /**
    * Attach a CTA tracker to an anchor element.
    * @param {HTMLElement} el
    */
@@ -387,14 +349,12 @@
       var href = el.getAttribute("href") || "";
       var text = (el.textContent || "").trim();
       var eventName = classifyCTA(href, text);
-      var isBookingIntent = BOOKING_INTENT_EVENTS.indexOf(eventName) >= 0;
       track(eventName, {
         button_text: text,
         target_url: href,
-        booking_intent: isBookingIntent,
       });
-      // Advance funnel on any real booking-intent click, not just literal "book" links
-      if (isBookingIntent) {
+      // Advance funnel if booking click
+      if (eventName === "booking_click") {
         advanceFunnel("booking_cta_clicked");
       }
     });
@@ -706,11 +666,7 @@
     if (role === "user") {
       analytics.totalUserMessages++;
       analytics.messageLengths.push(text.length);
-      track("message_sent", {
-        length: text.length,
-        message: text,
-        matched_services: matchServices(text),
-      });
+      track("message_sent", { length: text.length });
       if (analytics.totalUserMessages === 1) {
         analytics.conversationStartTs = Date.now();
         advanceFunnel("conversation_started");
@@ -941,7 +897,12 @@
           completionTime: Math.round((Date.now() - formShownTs) / 1000),
         });
         advanceFunnel("lead_submitted");
-        postToWebhook({ type: "lead", lead: lead });
+        postToWebhook({
+          type: "lead",
+          messageType: "lead_form_submit",
+          leadSubmissionId: uuid(),
+          lead: lead
+        });
       },
       onSkip: function (box) {
         box.remove();
@@ -975,6 +936,8 @@
         });
         postToWebhook({
           type: "form_submission",
+          messageType: "lead_form_submit",
+          leadSubmissionId: uuid(),
           formId: formDef.id || null,
           form: { title: formDef.title || "", fields: fields.map(function (f) { return f.key; }) },
           values: values,
@@ -983,11 +946,49 @@
     });
   }
 
+  function normalizeFormFields(fields) {
+    if (!Array.isArray(fields)) return [];
+    return fields.map(function (f) {
+      if (typeof f === "string") {
+        var parts = f.split(":");
+        return {
+          key: (parts[0] || "").trim(),
+          type: (parts[1] || "text").trim(),
+          label: (parts[2] || parts[0] || "").trim(),
+          required: parts.indexOf("required") >= 0,
+        };
+      }
+      return f;
+    }).filter(function (f) { return f && f.key; });
+  }
+
+  function renderStructuredMessages(messages) {
+    if (!Array.isArray(messages) || !messages.length) return false;
+    messages.forEach(function (msg) {
+      if (!msg) return;
+      var type = msg.type || "text";
+      if (type === "lead_form" || type === "form") {
+        renderBotForm(Object.assign({}, msg, { fields: normalizeFormFields(msg.fields) }));
+      } else if (type === "buttons") {
+        var items = Array.isArray(msg.items) ? msg.items : [];
+        addQuickReplies(items.map(function (item) {
+          return typeof item === "string" ? item : (item.label || item.value || "");
+        }).filter(Boolean));
+      } else {
+        addMessage("bot", String(msg.content || msg.text || ""), true);
+      }
+    });
+    return true;
+  }
+
   // ─── Transport ────────────────────────────────────────────────────────────
 
   function postToWebhook(extra) {
     var payload = Object.assign(
       {
+        clientId: config.clientId,
+        widgetVersion: config.widgetVersion,
+        schemaVersion: config.schemaVersion,
         sessionId: sessionId,
         visitorId: visitorId,
         pageUrl: location.href,
@@ -1031,13 +1032,14 @@
       })
       .then(function (data) {
         typing.remove();
-        var reply =
-          (data && (data.reply || data.output || data.text || data.message)) ||
-          "Thanks — we'll get back to you shortly.";
         var first = Array.isArray(data) && data.length ? data[0] : null;
-        if (first) reply = first.reply || first.output || first.text || reply;
         var payloadForExtras = first || data || {};
-        addMessage("bot", String(reply));
+        var structured = payloadForExtras && payloadForExtras.messages;
+        var renderedStructured = renderStructuredMessages(structured);
+        var reply =
+          (payloadForExtras && (payloadForExtras.reply || payloadForExtras.text || payloadForExtras.message)) ||
+          "Thanks — we'll get back to you shortly.";
+        if (!renderedStructured) addMessage("bot", String(reply));
 
         // AI Metrics from webhook response
         if (payloadForExtras.intent || payloadForExtras.confidence != null) {
@@ -1106,7 +1108,6 @@
       avg_message_length: analytics.messageLengths.length
         ? Math.round(analytics.messageLengths.reduce(function (a, b) { return a + b; }, 0) / analytics.messageLengths.length)
         : 0,
-      funnel_step_at_exit: analytics.funnelStep,
     });
   }
 
